@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@fhevm/solidity": "^0.7.0",
+    "@openzeppelin/contracts": "^5.4.0",
     "@zama-fhe/oracle-solidity": "^0.1.0",
     "encrypted-types": "^0.0.4"
   },
@@ -16,6 +17,7 @@
   "scripts": {
     "clean": "rm -rf  ./fhevmTemp ./artifacts ./cache ./coverage ./types ./coverage.json ./dist && npm run typechain",
     "compile": "TS_NODE_TRANSPILE_ONLY=true hardhat compile",
+    "format": "forge fmt ./src",
     "test": "hardhat test",
     "test:sepolia": "hardhat test --network sepolia",
     "typechain": "TS_NODE_TRANSPILE_ONLY=true hardhat typechain"

@@ -2,13 +2,14 @@
 
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, ebool,externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /// @notice This contract implements an encrypted ERC20-like token with confidential balances using Zama's FHE (Fully Homomorphic Encryption) library.
 /// @dev It supports typical ERC20 functionality such as transferring tokens, minting, and setting allowances, but uses encrypted data types.
 contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
+    using FHE for *;
     /// @notice Emitted when tokens are transferred
     event Transfer(address indexed from, address indexed to);
     /// @notice Emitted when a spender is approved to spend tokens on behalf of an owner
@@ -17,11 +18,11 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     event Mint(address indexed to, uint64 amount);
 
     /// @dev Stores the total supply of the token
-    uint64 private _totalSupply;
+    uint64 internal _totalSupply;
     /// @dev Name of the token (e.g., "Confidential Token")
-    string private _name;
+    string internal _name;
     /// @dev Symbol of the token (e.g., "CTK")
-    string private _symbol;
+    string internal _symbol;
     /// @notice Number of decimal places for the token
     uint8 public constant decimals = 6;
 
@@ -34,7 +35,7 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @notice Constructor to initialize the token's name and symbol, and set up the owner
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
-    constructor(string memory name_, string memory symbol_) Ownable(msg.sender) {
+    constructor(string memory name_, string memory symbol_, address initialOwner) Ownable(initialOwner) {
         _name = name_;
         _symbol = symbol_;
     }
@@ -54,15 +55,15 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
         return _totalSupply;
     }
 
-    /// @notice Mints new tokens and assigns them to the owner, increasing the total supply.
+    /// @notice Mints new tokens and assigns them to address, increasing the total supply.
     /// @dev Only the contract owner can call this function.
     /// @param mintedAmount The amount of tokens to mint
-    function mint(uint64 mintedAmount) public virtual onlyOwner {
-        balances[owner()] = FHE.add(balances[owner()], mintedAmount); // overflow impossible because of next line
-        FHE.allowThis(balances[owner()]);
-        FHE.allow(balances[owner()], owner());
+    function mint(address to, uint64 mintedAmount) public virtual onlyOwner {
+        balances[to] = FHE.add(balances[to], mintedAmount); // overflow impossible because of next line
+        FHE.allowThis(balances[to]);
+        FHE.allow(balances[to], to);
         _totalSupply = _totalSupply + mintedAmount;
-        emit Mint(owner(), mintedAmount);
+        emit Mint(to, mintedAmount);
     }
 
     /// @notice Transfers an encrypted amount from the message sender address to the `to` address.
@@ -70,11 +71,11 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @param encryptedAmount The encrypted amount to transfer
     /// @param inputProof The proof for the encrypted input
     /// @return bool indicating success of the transfer
-    function transfer(
-        address to,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public virtual returns (bool) {
+    function transfer(address to, externalEuint64 encryptedAmount, bytes calldata inputProof)
+        public
+        virtual
+        returns (bool)
+    {
         transfer(to, FHE.fromExternal(encryptedAmount, inputProof));
         return true;
     }
@@ -98,16 +99,17 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
         return balances[wallet];
     }
 
+
     /// @notice Sets the allowance of `spender` to use a specific encrypted amount of the caller's tokens.
     /// @param spender The address authorized to spend
     /// @param encryptedAmount The encrypted amount to approve
     /// @param inputProof The proof for the encrypted input
     /// @return bool indicating success of the approval
-    function approve(
-        address spender,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public virtual returns (bool) {
+    function approve(address spender, externalEuint64 encryptedAmount, bytes calldata inputProof)
+        public
+        virtual
+        returns (bool)
+    {
         approve(spender, FHE.fromExternal(encryptedAmount, inputProof));
         return true;
     }
@@ -138,12 +140,11 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @param encryptedAmount The encrypted amount to transfer
     /// @param inputProof The proof for the encrypted input
     /// @return bool indicating success of the transfer
-    function transferFrom(
-        address from,
-        address to,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public virtual returns (bool) {
+    function transferFrom(address from, address to, externalEuint64 encryptedAmount, bytes calldata inputProof)
+        public
+        virtual
+        returns (bool)
+    {
         transferFrom(from, to, FHE.fromExternal(encryptedAmount, inputProof));
         return true;
     }
