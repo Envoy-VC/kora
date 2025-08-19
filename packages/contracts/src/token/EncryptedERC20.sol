@@ -5,17 +5,21 @@ pragma solidity ^0.8.24;
 import {FHE, euint64, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice This contract implements an encrypted ERC20-like token with confidential balances using Zama's FHE (Fully Homomorphic Encryption) library.
 /// @dev It supports typical ERC20 functionality such as transferring tokens, minting, and setting allowances, but uses encrypted data types.
 contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     using FHE for *;
+    IERC20 public immutable _underlyingToken;
     /// @notice Emitted when tokens are transferred
     event Transfer(address indexed from, address indexed to);
     /// @notice Emitted when a spender is approved to spend tokens on behalf of an owner
     event Approval(address indexed owner, address indexed spender);
     /// @notice Emitted when new tokens are minted
     event Mint(address indexed to, uint64 amount);
+
+    error InsufficientBalance();
 
     /// @dev Stores the total supply of the token
     uint64 internal _totalSupply;
@@ -35,9 +39,10 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @notice Constructor to initialize the token's name and symbol, and set up the owner
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
-    constructor(string memory name_, string memory symbol_, address initialOwner) Ownable(initialOwner) {
+    constructor(string memory name_, string memory symbol_, address initialOwner, address underlyingToken_) Ownable(initialOwner) {
         _name = name_;
         _symbol = symbol_;
+        _underlyingToken = IERC20(underlyingToken_);
     }
 
     /// @notice Returns the name of the token.
@@ -58,12 +63,26 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @notice Mints new tokens and assigns them to address, increasing the total supply.
     /// @dev Only the contract owner can call this function.
     /// @param mintedAmount The amount of tokens to mint
-    function mint(address to, uint64 mintedAmount) public virtual onlyOwner {
+    function mint(address to, uint64 mintedAmount) internal {
         balances[to] = FHE.add(balances[to], mintedAmount); // overflow impossible because of next line
         FHE.allowThis(balances[to]);
         FHE.allow(balances[to], to);
         _totalSupply = _totalSupply + mintedAmount;
         emit Mint(to, mintedAmount);
+    }
+
+    function deposit(uint64 amount) public payable {
+        uint256 balance = _underlyingToken.balanceOf(msg.sender);
+        if (balance < amount) revert InsufficientBalance();
+        _underlyingToken.transferFrom(msg.sender, address(this), amount);
+        mint(msg.sender, amount);
+    }
+
+    function withdraw(uint64 amount) public {
+        euint64 encAmount = FHE.asEuint64(amount);
+        encAmount.allow(msg.sender);
+        transfer(address(0), encAmount);
+        _underlyingToken.transfer(msg.sender, amount);
     }
 
     /// @notice Transfers an encrypted amount from the message sender address to the `to` address.
