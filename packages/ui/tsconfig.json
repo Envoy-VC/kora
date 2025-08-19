@@ -5,9 +5,9 @@
     "declaration": true,
     "declarationMap": true,
     "jsx": "react-jsx",
-    "paths": { "@repo/ui/*": ["./src/*"] }
+    "paths": { "@kora/ui/*": ["./src/*"] }
   },
   "exclude": ["node_modules", "dist"],
-  "extends": "@repo/config/tsconfig/library/browser",
+  "extends": "@kora/config/tsconfig/library/browser",
   "include": ["**/*.ts", "**/*.tsx"]
 }

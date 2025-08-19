@@ -4,15 +4,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@repo/ui/*": ["../../packages/ui/src/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+      "@kora/ui/*": ["../../packages/ui/src/*"]
+    }
   },
-  "exclude": ["node_modules"],
-  "extends": ["@repo/config/tsconfig/app/next"],
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"]
+  "exclude": ["node_modules", "dist"],
+  "extends": "@kora/config/tsconfig/app/vite",
+  "include": ["**/*.ts", "**/*.tsx"]
 }

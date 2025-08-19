@@ -1,7 +1,7 @@
 {
   "author": "Vedant Chainani <vedantchainani1084@gmail.com>",
   "devDependencies": {
-    "@biomejs/biome": "^2.0.5"
+    "@biomejs/biome": "2.0.6"
   },
   "exports": {
     "./biome": "./biome/base.json",
@@ -14,11 +14,12 @@
     "./tsconfig/app/vite": "./tsconfig/app/vite.json",
     "./tsconfig/library": "./tsconfig/library/base.json",
     "./tsconfig/library/base": "./tsconfig/library/base.json",
-    "./tsconfig/library/browser": "./tsconfig/library/browser.json"
+    "./tsconfig/library/browser": "./tsconfig/library/browser.json",
+    "./tsconfig/library/node": "./tsconfig/library/base.json"
   },
   "files": ["./biome", "./tsconfig"],
   "license": "MIT",
-  "name": "@repo/config",
+  "name": "@kora/config",
   "scripts": {
     "format": "pnpm exec biome format",
     "format:write": "pnpm exec biome format --write",

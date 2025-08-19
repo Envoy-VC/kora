@@ -3,7 +3,7 @@ import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 import { ProviderTree } from "@/providers";
 
-import "@repo/ui/globals.css";
+import "@kora/ui/globals.css";
 
 const RootComponent = () => {
   return (

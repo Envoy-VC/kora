@@ -6,7 +6,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(async ({ mode }) => {
-  // @ts-ignore assign read-only env for build, load all env vars
+  // @ts-expect-error assign read-only env for build, load all env vars
   import.meta.env = loadEnv(mode, process.cwd(), "");
   const { env } = await import("./src/env");
   return {

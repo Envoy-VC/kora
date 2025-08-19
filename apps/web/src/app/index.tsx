@@ -1,4 +1,4 @@
-import { Button } from "@repo/ui/components/button";
+import { Button } from "@kora/ui/components/button";
 import { createFileRoute } from "@tanstack/react-router";
 
 const HomeComponent = () => {
