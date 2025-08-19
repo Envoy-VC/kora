@@ -1,0 +1,42 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "extends": "//",
+  "linter": {
+    "domains": {
+      "next": "all",
+      "react": "all"
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["./src/env.js"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "./src/app/**/page.tsx",
+        "./src/app/**/layout.tsx",
+        "./src/app/**/not-found.tsx",
+        "./src/app/**/*error.tsx",
+        "./src/app/**/opengraph-image.tsx",
+        "./src/app/**/apple-icon.tsx",
+        "src/app/**/sitemap.ts",
+        "src/app/**/robots.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    }
+  ],
+  "root": false
+}

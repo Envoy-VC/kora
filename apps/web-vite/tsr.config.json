@@ -1,0 +1,12 @@
+{
+  "generatedRouteTree": "./src/route-tree.gen.ts",
+  "quoteStyle": "double",
+  "routeFileIgnorePrefix": "-",
+  "routesDirectory": "./src/app",
+  "routeTreeFileHeader": [
+    "/** biome-ignore-all lint/style/useNamingConvention: safe */",
+    "/** biome-ignore-all lint/suspicious/noExplicitAny: safe  */",
+    "// @ts-nocheck"
+  ],
+  "semicolons": true
+}

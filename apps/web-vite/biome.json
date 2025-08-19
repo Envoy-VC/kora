@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "extends": "//",
+  "linter": {
+    "domains": {
+      "react": "all"
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["./src/env.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    }
+  ],
+  "root": false
+}
