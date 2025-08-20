@@ -2,6 +2,9 @@
   "[css,graphql,javascript,json,jsonc,typescript,typescriptreact]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
   "editor.codeActionsOnSave": {
     "source.action.useSortedAttributes.biome": "explicit",
     "source.action.useSortedKeys.biome": "explicit",

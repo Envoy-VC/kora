@@ -11,8 +11,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev It supports typical ERC20 functionality such as transferring tokens, minting, and setting allowances, but uses encrypted data types.
 contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     using FHE for *;
+
     IERC20 public immutable _underlyingToken;
     /// @notice Emitted when tokens are transferred
+
     event Transfer(address indexed from, address indexed to);
     /// @notice Emitted when a spender is approved to spend tokens on behalf of an owner
     event Approval(address indexed owner, address indexed spender);
@@ -39,7 +41,9 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     /// @notice Constructor to initialize the token's name and symbol, and set up the owner
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
-    constructor(string memory name_, string memory symbol_, address initialOwner, address underlyingToken_) Ownable(initialOwner) {
+    constructor(string memory name_, string memory symbol_, address initialOwner, address underlyingToken_)
+        Ownable(initialOwner)
+    {
         _name = name_;
         _symbol = symbol_;
         _underlyingToken = IERC20(underlyingToken_);
@@ -117,7 +121,6 @@ contract EncryptedERC20 is Ownable2Step, SepoliaConfig {
     function balanceOf(address wallet) public view virtual returns (euint64) {
         return balances[wallet];
     }
-
 
     /// @notice Sets the allowance of `spender` to use a specific encrypted amount of the caller's tokens.
     /// @param spender The address authorized to spend
