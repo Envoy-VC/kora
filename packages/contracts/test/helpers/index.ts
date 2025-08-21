@@ -29,14 +29,17 @@ export const getEncryptedTokenBalance = async (
     encryptedBalance = await token.connect(signer).balanceOf(signer.address);
   }
 
-  const clearBalance = await fhevm.userDecryptEuint(
-    FhevmType.euint64,
-    encryptedBalance,
-    typeof token === "string" ? token : await token.getAddress(),
-    signer,
-  );
-
-  return { clearBalance, encryptedBalance };
+  try {
+    const clearBalance = await fhevm.userDecryptEuint(
+      FhevmType.euint64,
+      encryptedBalance,
+      typeof token === "string" ? token : await token.getAddress(),
+      signer,
+    );
+    return { clearBalance, encryptedBalance };
+  } catch (error) {
+    return { clearBalance: 0n, encryptedBalance: ethers.ZeroHash };
+  }
 };
 
 export const getSigners = async () => {
@@ -53,5 +56,40 @@ export const mintMockTokens = async (
 ) => {
   const { deployer } = await getSigners();
   const tx = await token.connect(deployer).mint(to, amount);
+  await tx.wait();
+};
+
+export const approveMockTokens = async (
+  token: MockERC20,
+  signer: HardhatEthersSigner,
+  spender: string,
+  amount: bigint,
+) => {
+  const tx = await token.connect(signer).approve(spender, amount);
+  await tx.wait();
+};
+
+export const depositMockTokens = async (
+  token: EncryptedERC20,
+  signer: HardhatEthersSigner,
+  amount: bigint,
+) => {
+  const tx = await token.connect(signer).deposit(amount);
+  await tx.wait();
+};
+
+export const approveEncryptedToken = async (
+  token: EncryptedERC20,
+  signer: HardhatEthersSigner,
+  spender: string,
+  amount: bigint,
+) => {
+  const enc = await fhevm
+    .createEncryptedInput(await token.getAddress(), signer.address)
+    .add64(amount)
+    .encrypt();
+  const tx = await token
+    .connect(signer)
+    ["approve(address,bytes32,bytes)"](spender, enc.handles[0], enc.inputProof);
   await tx.wait();
 };

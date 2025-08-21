@@ -7,9 +7,10 @@ struct SwapHook {
 }
 
 import {IntentLib} from "../libraries/IntentLib.sol";
+import {ExecutionResult} from "./IKoraExecutor.sol";
 
 interface ISwapHook {
     function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external view;
-    function postSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external;
+    function postSwap(bytes32 strategyId, ExecutionResult memory result) external;
     function initialize(bytes32 strategyId, bytes memory data) external;
 }

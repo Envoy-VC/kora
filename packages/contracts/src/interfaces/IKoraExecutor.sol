@@ -18,6 +18,8 @@ struct Strategy {
 struct ExecutionResult {
     /// @dev Whether the execution was successful
     bool success;
+    /// @dev The intent ID for the Intent
+    bytes32 intentId;
     /// @dev The strategy ID for the Intent
     bytes32 strategyId;
     /// @dev The amount of token0 specified in the Intent

@@ -35,6 +35,7 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: MNEMONIC,
       },
+      allowUnlimitedContractSize: true,
       chainId: 31337,
     },
     sepolia: {
@@ -54,6 +55,17 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
+    compilers: [
+      {
+        version: "0.8.24", // your contracts
+      },
+      {
+        version: "0.6.6", // uniswap v2 periphery
+      },
+      {
+        version: "0.5.16", // uniswap v2 core
+      },
+    ],
     settings: {
       evmVersion: "cancun",
       metadata: {
@@ -64,7 +76,6 @@ const config: HardhatUserConfig = {
         runs: 800,
       },
     },
-    version: "0.8.24",
   },
   typechain: {
     outDir: "types",
