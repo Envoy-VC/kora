@@ -71,6 +71,16 @@ describe("Wrapped Encrypted Token Tests", () => {
       .add64(ethers.parseUnits("0.5", 6))
       .encrypt();
 
+    // 3. Timeframe Hook
+    const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+    const validUntil = await fhevm
+      .createEncryptedInput(
+        await hooks.timeframeHook.getAddress(),
+        koraExecutorAddress,
+      )
+      .add64(Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS)
+      .encrypt();
+
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
     const strategyHooks = [
@@ -91,6 +101,13 @@ describe("Wrapped Encrypted Token Tests", () => {
           ],
         ),
         hook: hooks.purchaseAmountHook.target,
+      },
+      {
+        data: abiCoder.encode(
+          ["address", "bytes32", "bytes"],
+          [alice.address, validUntil.handles[0], validUntil.inputProof],
+        ),
+        hook: hooks.timeframeHook.target,
       },
     ];
 
