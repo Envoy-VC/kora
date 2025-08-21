@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { ethers, fhevm } from "hardhat";
 
 import {
@@ -64,17 +65,9 @@ describe("Wrapped Encrypted Token Tests", () => {
       eWETH,
       alice,
     );
-    console.log(
-      "Alice eWETH Balance Before Execute:",
-      ethers.formatUnits(eWETHBefore, 6),
-    );
     const { clearBalance: eUSDCBefore } = await getEncryptedTokenBalance(
       eUSDC,
       alice,
-    );
-    console.log(
-      "Alice eUSDC Balance Before Execute:",
-      ethers.formatUnits(eUSDCBefore, 6),
     );
 
     const executeTx = await koraExecutor.connect(alice).executeBatch([
@@ -93,18 +86,14 @@ describe("Wrapped Encrypted Token Tests", () => {
       eWETH,
       alice,
     );
-    console.log(
-      "Alice eWETH Balance After Execute:",
-      ethers.formatUnits(eWETHAfter, 6),
-    );
+
     const { clearBalance: eUSDCAfter } = await getEncryptedTokenBalance(
       eUSDC,
       alice,
     );
 
-    console.log(
-      "Alice eUSDC Balance After Execute:",
-      ethers.formatUnits(eUSDCAfter, 6),
-    );
+    expect(eWETHAfter).to.be.eq(ethers.parseUnits("0.5", 6));
+    expect(eUSDCAfter).to.be.gt(eUSDCBefore);
+    expect(eWETHBefore).to.be.gt(eWETHBefore);
   });
 });

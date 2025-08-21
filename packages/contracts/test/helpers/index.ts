@@ -37,7 +37,7 @@ export const getEncryptedTokenBalance = async (
       signer,
     );
     return { clearBalance, encryptedBalance };
-  } catch (error) {
+  } catch (_error: unknown) {
     return { clearBalance: 0n, encryptedBalance: ethers.ZeroHash };
   }
 };
