@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./app/__root";
+import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
 import { Route as IndexRouteImport } from "./app/index";
 
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  getParentRoute: () => rootRouteImport,
+  id: "/dashboard",
+  path: "/dashboard",
+} as any);
 const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
   id: "/",
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/dashboard": typeof DashboardRouteRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/dashboard": typeof DashboardRouteRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
+  "/dashboard": typeof DashboardRouteRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/";
+  fullPaths: "/" | "/dashboard";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/";
-  id: "__root__" | "/";
+  to: "/" | "/dashboard";
+  id: "__root__" | "/" | "/dashboard";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  DashboardRouteRoute: typeof DashboardRouteRoute;
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/dashboard": {
+      id: "/dashboard";
+      path: "/dashboard";
+      fullPath: "/dashboard";
+      preLoaderRoute: typeof DashboardRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/": {
       id: "/";
       path: "/";
@@ -52,6 +69,7 @@ declare module "@tanstack/react-router" {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  DashboardRouteRoute: DashboardRouteRoute,
   IndexRoute: IndexRoute,
 };
 export const routeTree = rootRouteImport
