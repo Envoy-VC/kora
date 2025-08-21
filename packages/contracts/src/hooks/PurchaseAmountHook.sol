@@ -7,8 +7,6 @@ import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ISwapHook} from "../interfaces/ISwapHook.sol";
 import {IntentResult} from "../interfaces/IKoraExecutor.sol";
 
-import "hardhat/console.sol";
-
 import {IntentLib} from "../libraries/IntentLib.sol";
 
 import {KoraExecutor} from "../KoraExecutor.sol";

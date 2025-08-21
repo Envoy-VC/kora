@@ -2,6 +2,7 @@ import "@fhevm/hardhat-plugin";
 
 import { type HardhatUserConfig, vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ignition-ethers";
 
 const MNEMONIC: string = vars.get(
   "MNEMONIC",

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+// FHE Imports
 import {FHE, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 import {ISwapHook} from "../interfaces/ISwapHook.sol";
 import {IntentResult} from "../interfaces/IKoraExecutor.sol";
-
-import "hardhat/console.sol";
 
 import {IntentLib} from "../libraries/IntentLib.sol";
 
@@ -46,8 +45,6 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
     function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external returns (ebool) {
         euint64 currentSpent = _spent[strategyId];
 
-        console.log("Calling PreSwap");
-
         euint64 spentAfterSwap = FHE.add(currentSpent, intent.amount0);
         ebool isAllowed = FHE.le(spentAfterSwap, _maxBudget[strategyId]);
         FHE.allow(isAllowed, address(executor));
@@ -55,8 +52,6 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
     }
 
     function postSwap(bytes32 strategyId, IntentResult memory result) external {
-        console.log("Calling PostSwap");
-
         euint64 spentAfterSwap = FHE.add(_spent[strategyId], result.amount0);
         _spent[strategyId] = spentAfterSwap;
         FHE.allowThis(_spent[strategyId]);

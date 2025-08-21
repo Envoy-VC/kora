@@ -10,8 +10,6 @@ import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUn
 // Token
 import {EncryptedERC20} from "./token/EncryptedERC20.sol";
 
-import "hardhat/console.sol";
-
 // Interfaces
 import "./interfaces/IKoraExecutor.sol";
 import "./interfaces/ISwapHook.sol";
@@ -136,7 +134,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
 
             // 1.3 Pull in EncryptedERC20 tokens from Strategy User to this contract
             (bool pullSuccess, bytes memory pullResult) = _pullIn(strategy.user, intentAmount);
-            console.log("Pull Status:", pullSuccess);
 
             if (!pullSuccess) {
                 results[i] = IntentResult(
@@ -189,7 +186,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             }
         }
 
-        console.log("Batch Requested");
         emit BatchRequested(latestRequestId);
     }
 
@@ -298,7 +294,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         bool[] memory preHookChecks,
         bytes[] memory signatures
     ) internal {
-        console.log("Callback Called");
         Batch storage batch = _batches[requestId];
 
         // 1. Check for Valid Signatures
@@ -312,7 +307,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         if (batch.totalResults == 0) {
             revert NonExistentBatch();
         }
-        console.log("here0");
 
         // 4. Return cases where pull was true but preCheck was false
         for (uint256 i; i < batch.totalResults;) {
@@ -326,7 +320,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 ++i;
             }
         }
-        console.log("here");
 
         if (totalIn == 0) return;
 
@@ -346,7 +339,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         for (uint256 i; i < len;) {
             // 7.1 Check if Intent has passed Checks
             if (!preHookChecks[i]) {
-                console.log("Intent did not pass checks");
                 unchecked {
                     ++i;
                 }
