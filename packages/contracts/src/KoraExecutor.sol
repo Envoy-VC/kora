@@ -71,10 +71,9 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         address[] memory hookAddresses = new address[](len);
         bytes32 strategyId = computeStrategyId(user, salt);
 
-        // Initialize each SwapHook
+        // Get All Hook Addresses
         for (uint256 i; i < len;) {
             hookAddresses[i] = hooks[i].hook;
-            ISwapHook(hooks[i].hook).initialize(strategyId, hooks[i].data);
             unchecked {
                 ++i;
             }
@@ -83,22 +82,30 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         // Validate Hooks
         _validateHooks(hookAddresses);
 
+        // Initialize each SwapHook
+        for (uint256 i; i < len;) {
+            ISwapHook(hooks[i].hook).initialize(strategyId, hooks[i].data);
+            unchecked {
+                ++i;
+            }
+        }
+
         Strategy memory _strategy = Strategy({user: user, timestamp: uint64(block.timestamp), hooks: hookAddresses});
         _strategies[strategyId] = _strategy;
 
         emit StrategyCreated(strategyId, _strategy);
     }
 
-    function executeBatch(IntentLib.Intent[] calldata intents) external {
+    function executeBatch(IntentLib.IntentExternal[] calldata intents) external {
         uint256 len = intents.length;
-        ExecutionResult[] memory results = new ExecutionResult[](len);
+        IntentResult[] memory results = new IntentResult[](len);
 
         // Initialize Total Token Input
         euint64 totalIn = FHE.asEuint64(0);
 
-        // 1. Validate via hooks & pull funds for successes
+        // 1. Validate via hooks
         for (uint256 i; i < len;) {
-            IntentLib.Intent calldata intent = intents[i];
+            IntentLib.IntentExternal calldata intent = intents[i];
 
             Strategy memory strategy = _strategies[intent.strategyId];
 
@@ -107,20 +114,9 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             // 1.1 Check for Non-existent Strategy
             if (strategy.user == address(0)) {
                 bytes memory reason = abi.encodePacked("KoraExecutor: Strategy not found");
-                results[i] = ExecutionResult(false, intent.intentId, intent.strategyId, intentAmount, (reason));
-                emit IntentRejected(intent.intentId, intent.strategyId, address(0), reason);
-                unchecked {
-                    ++i;
-                }
-                continue;
-            }
-
-            // 1.2 Run Isolated Hooks, failure in any hook will reject the Intent, not the entire batch
-            address[] memory hooks = strategy.hooks;
-            bool okHooks = _runPreHooks(hooks, intent);
-            if (!okHooks) {
-                bytes memory reason = abi.encodePacked("KoraExecutor: Hook failure");
-                results[i] = ExecutionResult(false, intent.intentId, intent.strategyId, intentAmount, (reason));
+                results[i] = IntentResult(
+                    false, intent.intentId, strategy.user, intent.strategyId, intentAmount, FHE.asEbool(false), reason
+                );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, reason);
                 unchecked {
                     ++i;
@@ -128,10 +124,18 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
+            // 1.2 Run Isolated Hooks and get ebool results
+            address[] memory hooks = strategy.hooks;
+            IntentLib.Intent memory intentInternal =
+                IntentLib.Intent({amount0: intentAmount, intentId: intent.intentId, strategyId: intent.strategyId});
+            ebool preHookCheck = _runPreHooks(hooks, intentInternal);
+
             // 1.3 Pull in EncryptedERC20 tokens from Strategy User to this contract
             (bool pullSuccess, bytes memory pullResult) = _pullIn(strategy.user, intentAmount);
             if (!pullSuccess) {
-                results[i] = ExecutionResult(false, intent.intentId, intent.strategyId, intentAmount, (pullResult));
+                results[i] = IntentResult(
+                    false, intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, pullResult
+                );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, pullResult);
                 unchecked {
                     ++i;
@@ -139,9 +143,14 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
-            // 1.4 Mark Success and Add to Total Token Input
-            results[i] = ExecutionResult(true, intent.intentId, intent.strategyId, intentAmount, (bytes("")));
-            euint64 runningTotal = FHE.add(totalIn, intentAmount);
+            // 1.3 Mark Success and Add to Total Token Input
+            results[i] = IntentResult(
+                true, intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, bytes("")
+            );
+
+            // 1.4 Add only if preHookCheck is successful
+            euint64 toAdd = FHE.select(preHookCheck, intentAmount, FHE.asEuint64(0));
+            euint64 runningTotal = FHE.add(totalIn, toAdd);
             totalIn = runningTotal;
 
             emit IntentAccepted(intent.intentId, intent.strategyId, strategy.user);
@@ -152,9 +161,15 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         }
 
         // 2. Request Decryption of Total Amount from Decryption Oracle
-        bytes32[] memory cts = new bytes32[](1);
+        bytes32[] memory cts = new bytes32[](1 + len);
         cts[0] = FHE.toBytes32(totalIn);
-        uint256 latestRequestId = FHE.requestDecryption(cts, this.decryptionCallback.selector);
+        for (uint256 i; i < len;) {
+            cts[i + 1] = FHE.toBytes32(results[i].preHookCheck);
+            unchecked {
+                ++i;
+            }
+        }
+        uint256 latestRequestId = _requestDecryption(cts);
 
         _batches[latestRequestId].totalResults = len;
         _batches[latestRequestId].totalIn = totalIn;
@@ -171,8 +186,117 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         emit BatchRequested(latestRequestId);
     }
 
-    function decryptionCallback(uint256 requestId, uint64 totalIn, bytes[] memory signatures) public {
+    function decryptionCallback1(uint256 requestId, uint64 totalIn, bool preHookCheck1, bytes[] memory signatures)
+        public
+    {
+        bool[] memory preHookChecks = new bool[](1);
+        preHookChecks[0] = preHookCheck1;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function decryptionCallback2(
+        uint256 requestId,
+        uint64 totalIn,
+        bool preHookCheck1,
+        bool preHookCheck2,
+        bytes[] memory signatures
+    ) public {
+        bool[] memory preHookChecks = new bool[](2);
+        preHookChecks[0] = preHookCheck1;
+        preHookChecks[1] = preHookCheck2;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function decryptionCallback3(
+        uint256 requestId,
+        uint64 totalIn,
+        bool preHookCheck1,
+        bool preHookCheck2,
+        bool preHookCheck3,
+        bytes[] memory signatures
+    ) public {
+        bool[] memory preHookChecks = new bool[](3);
+        preHookChecks[0] = preHookCheck1;
+        preHookChecks[1] = preHookCheck2;
+        preHookChecks[2] = preHookCheck3;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function decryptionCallback4(
+        uint256 requestId,
+        uint64 totalIn,
+        bool preHookCheck1,
+        bool preHookCheck2,
+        bool preHookCheck3,
+        bool preHookCheck4,
+        bytes[] memory signatures
+    ) public {
+        bool[] memory preHookChecks = new bool[](4);
+        preHookChecks[0] = preHookCheck1;
+        preHookChecks[1] = preHookCheck2;
+        preHookChecks[2] = preHookCheck3;
+        preHookChecks[3] = preHookCheck4;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function decryptionCallback5(
+        uint256 requestId,
+        uint64 totalIn,
+        bool preHookCheck1,
+        bool preHookCheck2,
+        bool preHookCheck3,
+        bool preHookCheck4,
+        bool preHookCheck5,
+        bytes[] memory signatures
+    ) public {
+        bool[] memory preHookChecks = new bool[](5);
+        preHookChecks[0] = preHookCheck1;
+        preHookChecks[1] = preHookCheck2;
+        preHookChecks[2] = preHookCheck3;
+        preHookChecks[3] = preHookCheck4;
+        preHookChecks[4] = preHookCheck5;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function decryptionCallback6(
+        uint256 requestId,
+        uint64 totalIn,
+        bool preHookCheck1,
+        bool preHookCheck2,
+        bool preHookCheck3,
+        bool preHookCheck4,
+        bool preHookCheck5,
+        bool preHookCheck6,
+        bytes[] memory signatures
+    ) public {
+        bool[] memory preHookChecks = new bool[](6);
+        preHookChecks[0] = preHookCheck1;
+        preHookChecks[1] = preHookCheck2;
+        preHookChecks[2] = preHookCheck3;
+        preHookChecks[3] = preHookCheck4;
+        preHookChecks[4] = preHookCheck5;
+        preHookChecks[5] = preHookCheck6;
+
+        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
+    }
+
+    function _decryptionCallback(
+        uint256 requestId,
+        uint64 totalIn,
+        bool[] memory preHookChecks,
+        bytes[] memory signatures
+    ) internal {
         Batch storage batch = _batches[requestId];
+
+        if (totalIn == 0) {
+            // TODO: Handle this case
+            return;
+        }
 
         // 1. Check if the batch is pending
         if (!batch.isPending) {
@@ -208,10 +332,18 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
-            // 7.2 If Intent Amount is Zero, skip
+            // 7.2 Check if PreHook Check is Successful or not
+            if (!preHookChecks[i]) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+
+            // 7.3 If Intent Amount is Zero, skip
             euint64 intentAmountIn = batch.results[i].amount0;
 
-            // 7.3 Calculate Ratio of Intent Amount to Total Token Input
+            // 7.4 Calculate Ratio of Intent Amount to Total Token Input
             euint64 encAmountOut = FHE.asEuint64(uint64(amountOut));
             euint64 ratio = FHE.div(intentAmountIn, totalIn);
             euint64 intentAmountOut = FHE.mul(ratio, encAmountOut);
@@ -239,6 +371,25 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
     // -----------------------------------------------------------
     //                  Internal/Private Functions
     // -----------------------------------------------------------
+
+    function _requestDecryption(bytes32[] memory cts) internal returns (uint256) {
+        uint256 batchSize = cts.length - 1;
+        if (batchSize == 1) {
+            return FHE.requestDecryption(cts, this.decryptionCallback1.selector);
+        } else if (batchSize == 2) {
+            return FHE.requestDecryption(cts, this.decryptionCallback2.selector);
+        } else if (batchSize == 3) {
+            return FHE.requestDecryption(cts, this.decryptionCallback3.selector);
+        } else if (batchSize == 4) {
+            return FHE.requestDecryption(cts, this.decryptionCallback4.selector);
+        } else if (batchSize == 5) {
+            return FHE.requestDecryption(cts, this.decryptionCallback5.selector);
+        } else if (batchSize == 6) {
+            return FHE.requestDecryption(cts, this.decryptionCallback6.selector);
+        }
+
+        revert("KoraExecutor: Invalid Decryption Oracle Request");
+    }
 
     function _executeSwap(uint256 totalIn) internal returns (uint256) {
         address[] memory path = new address[](2);
@@ -277,13 +428,15 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         }
     }
 
-    function _runPreHooks(address[] memory hooks, IntentLib.Intent calldata intent) internal returns (bool) {
+    function _runPreHooks(address[] memory hooks, IntentLib.Intent memory intent) internal returns (ebool) {
         uint256 hooksLen = hooks.length;
-        if (hooksLen == 0) return true;
+
+        ebool res = FHE.asEbool(true);
 
         bytes memory encodedIntent = intent.encode();
         for (uint256 j; j < hooksLen;) {
             address hook = hooks[j];
+            FHE.allowTransient(intent.amount0, hook);
 
             // Call Pre-Swap Hook
             (bool ok, bytes memory result) =
@@ -291,18 +444,21 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
 
             if (!ok) {
                 emit HookFailed(intent.intentId, intent.strategyId, hook, result);
-                return false;
+                return FHE.asEbool(false);
             }
+
+            (ebool outcome) = abi.decode(result, (ebool));
+            res = FHE.and(res, outcome);
 
             unchecked {
                 ++j;
             }
         }
 
-        return true;
+        return res;
     }
 
-    function _executePostHooks(address[] memory hooks, ExecutionResult memory result) internal {
+    function _executePostHooks(address[] memory hooks, IntentResult memory result) internal {
         uint256 hooksLen = hooks.length;
         if (hooksLen == 0) return;
 

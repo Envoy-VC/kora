@@ -31,7 +31,7 @@ describe("Wrapped Encrypted Token Tests", () => {
 
   it("full user flow", async () => {
     const { alice } = signers;
-    const { weth, eWETH, koraExecutor, eUSDC } = env;
+    const { weth, eWETH, koraExecutor, eUSDC, hooks } = env;
 
     const koraExecutorAddress = await koraExecutor.getAddress();
 
@@ -50,8 +50,33 @@ describe("Wrapped Encrypted Token Tests", () => {
       salt,
     );
 
+    // Build Hooks
+
+    // 1. Budget Hook
+    const maxBudget = await fhevm
+      .createEncryptedInput(
+        await hooks.budgetHook.getAddress(),
+        koraExecutorAddress,
+      )
+      .add64(ethers.parseUnits("1", 6))
+      .encrypt();
+
+    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+    const strategyHooks = [
+      {
+        data: abiCoder.encode(
+          ["address", "bytes32", "bytes"],
+          [alice.address, maxBudget.handles[0], maxBudget.inputProof],
+        ),
+        hook: hooks.budgetHook.target,
+      },
+    ];
+
     // Create A Strategy
-    await koraExecutor.createStrategy(alice.address, [], salt);
+    await koraExecutor
+      .connect(alice)
+      .createStrategy(alice.address, strategyHooks, salt);
 
     const encryptedAmount = await fhevm
       .createEncryptedInput(koraExecutorAddress, alice.address)
