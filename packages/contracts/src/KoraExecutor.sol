@@ -115,7 +115,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             if (strategy.user == address(0)) {
                 bytes memory reason = abi.encodePacked("KoraExecutor: Strategy not found");
                 results[i] = IntentResult(
-                    false, intent.intentId, strategy.user, intent.strategyId, intentAmount, FHE.asEbool(false), reason
+                    intent.intentId, strategy.user, intent.strategyId, intentAmount, FHE.asEbool(false), false, reason
                 );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, reason);
                 unchecked {
@@ -126,15 +126,21 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
 
             // 1.2 Run Isolated Hooks and get ebool results
             address[] memory hooks = strategy.hooks;
-            IntentLib.Intent memory intentInternal =
-                IntentLib.Intent({amount0: intentAmount, intentId: intent.intentId, strategyId: intent.strategyId});
-            ebool preHookCheck = _runPreHooks(hooks, intentInternal);
+            ebool preHookCheck = _runPreHooks(
+                hooks,
+                IntentLib.Intent({amount0: intentAmount, intentId: intent.intentId, strategyId: intent.strategyId})
+            );
+
+            // 1.3 Check for Allowance
+            ebool hasPassedChecks = preHookCheck;
 
             // 1.3 Pull in EncryptedERC20 tokens from Strategy User to this contract
             (bool pullSuccess, bytes memory pullResult) = _pullIn(strategy.user, intentAmount);
+            console.log("Pull Status:", pullSuccess);
+
             if (!pullSuccess) {
                 results[i] = IntentResult(
-                    false, intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, pullResult
+                    intent.intentId, strategy.user, intent.strategyId, intentAmount, hasPassedChecks, false, pullResult
                 );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, pullResult);
                 unchecked {
@@ -145,11 +151,11 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
 
             // 1.3 Mark Success and Add to Total Token Input
             results[i] = IntentResult(
-                true, intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, bytes("")
+                intent.intentId, strategy.user, intent.strategyId, intentAmount, hasPassedChecks, true, bytes("")
             );
 
-            // 1.4 Add only if preHookCheck is successful
-            euint64 toAdd = FHE.select(preHookCheck, intentAmount, FHE.asEuint64(0));
+            // 1.4 Add only if hasPassedChecks is successful
+            euint64 toAdd = FHE.select(hasPassedChecks, intentAmount, FHE.asEuint64(0));
             euint64 runningTotal = FHE.add(totalIn, toAdd);
             totalIn = runningTotal;
 
@@ -164,7 +170,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         bytes32[] memory cts = new bytes32[](1 + len);
         cts[0] = FHE.toBytes32(totalIn);
         for (uint256 i; i < len;) {
-            cts[i + 1] = FHE.toBytes32(results[i].preHookCheck);
+            cts[i + 1] = FHE.toBytes32(results[i].hasPassedChecks);
             unchecked {
                 ++i;
             }
@@ -183,6 +189,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             }
         }
 
+        console.log("Batch Requested");
         emit BatchRequested(latestRequestId);
     }
 
@@ -291,26 +298,39 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         bool[] memory preHookChecks,
         bytes[] memory signatures
     ) internal {
+        console.log("Callback Called");
         Batch storage batch = _batches[requestId];
 
-        if (totalIn == 0) {
-            // TODO: Handle this case
-            return;
-        }
+        // 1. Check for Valid Signatures
+        FHE.checkSignatures(requestId, signatures);
 
-        // 1. Check if the batch is pending
+        // 2. Check if the batch is pending
         if (!batch.isPending) {
             revert BatchAlreadyCompleted();
         }
-        // 2. Check if the batch exists
+        // 3. Check if the batch exists
         if (batch.totalResults == 0) {
             revert NonExistentBatch();
         }
+        console.log("here0");
 
-        // 3. Check for Valid Signatures
-        FHE.checkSignatures(requestId, signatures);
+        // 4. Return cases where pull was true but preCheck was false
+        for (uint256 i; i < batch.totalResults;) {
+            bool hasPassedChecks = preHookChecks[i];
+            bool hasPulledIn = batch.results[i].hasPulledIn;
+            if (!hasPassedChecks && hasPulledIn) {
+                FHE.allowTransient(batch.results[i].amount0, address(token0));
+                token0.transfer(batch.results[i].user, batch.results[i].amount0);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        console.log("here");
 
-        // 4. Withdraw totalIn Token0 for swapping
+        if (totalIn == 0) return;
+
+        // 5. Withdraw totalIn Token0 for swapping
         token0.withdraw(totalIn);
 
         // 5. Execute Swap to get Underlying Token1
@@ -324,16 +344,9 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
 
         // 7. Distribute Tokens proportionally to Users as per their Intent Amounts
         for (uint256 i; i < len;) {
-            // 7.1 Check if Intent is Successful
-            if (!batch.results[i].success) {
-                unchecked {
-                    ++i;
-                }
-                continue;
-            }
-
-            // 7.2 Check if PreHook Check is Successful or not
+            // 7.1 Check if Intent has passed Checks
             if (!preHookChecks[i]) {
+                console.log("Intent did not pass checks");
                 unchecked {
                     ++i;
                 }
@@ -462,13 +475,13 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         uint256 hooksLen = hooks.length;
         if (hooksLen == 0) return;
 
-        bytes memory encodedResult = abi.encode(result);
         for (uint256 j; j < hooksLen;) {
             address hook = hooks[j];
+            FHE.allowTransient(result.amount0, hook);
 
             // Call Post-Swap Hook
             (bool ok, bytes memory res) =
-                hook.call(abi.encodeWithSelector(ISwapHook.postSwap.selector, result.strategyId, encodedResult));
+                hook.call(abi.encodeWithSelector(ISwapHook.postSwap.selector, result.strategyId, result));
 
             if (!ok) {
                 emit HookFailed(result.intentId, result.strategyId, hook, res);
@@ -484,6 +497,13 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         FHE.allowTransient(amount, address(token0));
         bytes memory data = abi.encodeWithSelector(0xb3c06f50, from, address(this), amount);
         (ok, result) = address(token0).call(data);
+    }
+
+    function _contractHasAllowance(address account, euint64 amount) private returns (ebool result) {
+        FHE.allowTransient(amount, address(token0));
+        euint64 allowance = token0.allowance(account, address(this));
+        ebool hasAllowance = FHE.ge(allowance, amount);
+        return hasAllowance;
     }
 
     function _isContract(address account) internal view returns (bool result) {

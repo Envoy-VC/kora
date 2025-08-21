@@ -16,8 +16,6 @@ struct Strategy {
 }
 
 struct IntentResult {
-    /// @dev Whether the execution was successful or not
-    bool success;
     /// @dev Intent Identifier
     bytes32 intentId;
     /// @dev User Address for this Strategy
@@ -26,8 +24,10 @@ struct IntentResult {
     bytes32 strategyId;
     /// @dev The amount of token0 specified in the Intent
     euint64 amount0;
-    /// @dev Whether the pre-hook check was successful
-    ebool preHookCheck;
+    /// @dev Whether the pre-hook check and allowances checks was successful
+    ebool hasPassedChecks;
+    /// @dev Whether the Intent Amount was successfully pulled in
+    bool hasPulledIn;
     /// @dev Revert data if the execution failed
     bytes revertData;
 }

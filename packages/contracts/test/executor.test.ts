@@ -156,7 +156,8 @@ describe("Wrapped Encrypted Token Tests", () => {
       },
     ]);
 
-    await executeTx.wait();
+    const r = await executeTx.wait();
+    console.log(r?.gasUsed.toString());
     await fhevm.awaitDecryptionOracle();
 
     const { clearBalance: eWETHAfter } = await getEncryptedTokenBalance(
@@ -172,5 +173,54 @@ describe("Wrapped Encrypted Token Tests", () => {
     expect(eWETHAfter).to.be.eq(ethers.parseUnits("0.5", 6));
     expect(eUSDCAfter).to.be.gt(eUSDCBefore);
     expect(eWETHBefore).to.be.gt(eWETHAfter);
+
+    console.log("\n================= First Execute =================");
+    console.log("eWETHBefore", ethers.formatUnits(eWETHBefore, 6));
+    console.log("eUSDCBefore", ethers.formatUnits(eUSDCBefore, 6));
+    console.log("eWETHAfter", ethers.formatUnits(eWETHAfter, 6));
+    console.log("eUSDCAfter", ethers.formatUnits(eUSDCAfter, 6));
+    console.log("=================================================\n");
+
+    const { clearBalance: eWETHBefore1 } = await getEncryptedTokenBalance(
+      eWETH,
+      alice,
+    );
+    const { clearBalance: eUSDCBefore1 } = await getEncryptedTokenBalance(
+      eUSDC,
+      alice,
+    );
+
+    const encryptedAmount2 = await fhevm
+      .createEncryptedInput(koraExecutorAddress, alice.address)
+      .add64(ethers.parseUnits("0.5", 6))
+      .encrypt();
+
+    const a = await koraExecutor.connect(alice).executeBatch([
+      {
+        amount0: encryptedAmount2.handles[0],
+        inputProof: encryptedAmount2.inputProof,
+        intentId: ethers.randomBytes(32),
+        strategyId: strategyId,
+      },
+    ]);
+
+    await a.wait();
+    await fhevm.awaitDecryptionOracle();
+
+    const { clearBalance: eWETHAfter1 } = await getEncryptedTokenBalance(
+      eWETH,
+      alice,
+    );
+    const { clearBalance: eUSDCAfter1 } = await getEncryptedTokenBalance(
+      eUSDC,
+      alice,
+    );
+
+    console.log("\n================= Second Execute =================");
+    console.log("eWETHBefore", ethers.formatUnits(eWETHBefore1, 6));
+    console.log("eUSDCBefore", ethers.formatUnits(eUSDCBefore1, 6));
+    console.log("eWETHAfter", ethers.formatUnits(eWETHAfter1, 6));
+    console.log("eUSDCAfter", ethers.formatUnits(eUSDCAfter1, 6));
+    console.log("=================================================\n");
   });
 });

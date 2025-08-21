@@ -46,15 +46,19 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
     function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external returns (ebool) {
         euint64 currentSpent = _spent[strategyId];
 
-        euint64 allowanceAfterSwap = FHE.add(currentSpent, intent.amount0);
-        ebool isAllowed = FHE.le(allowanceAfterSwap, _maxBudget[strategyId]);
+        console.log("Calling PreSwap");
+
+        euint64 spentAfterSwap = FHE.add(currentSpent, intent.amount0);
+        ebool isAllowed = FHE.le(spentAfterSwap, _maxBudget[strategyId]);
         FHE.allow(isAllowed, address(executor));
         return isAllowed;
     }
 
     function postSwap(bytes32 strategyId, IntentResult memory result) external {
-        euint64 allowanceAfterSwap = FHE.add(_spent[strategyId], result.amount0);
-        _spent[strategyId] = allowanceAfterSwap;
+        console.log("Calling PostSwap");
+
+        euint64 spentAfterSwap = FHE.add(_spent[strategyId], result.amount0);
+        _spent[strategyId] = spentAfterSwap;
         FHE.allowThis(_spent[strategyId]);
         FHE.allow(_spent[strategyId], result.user);
     }
