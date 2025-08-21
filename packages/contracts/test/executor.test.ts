@@ -43,15 +43,12 @@ describe("Wrapped Encrypted Token Tests", () => {
     await depositMockTokens(eWETH, alice, amount);
     await approveEncryptedToken(eWETH, alice, koraExecutorAddress, amount);
 
-    const salt =
-      "0x2167b80e042c1942216f74551a0aaa051f588207ac7098a2032c5d3201d4655f";
+    const salt = ethers.hexlify(ethers.randomBytes(32));
 
     const strategyId = await koraExecutor.computeStrategyId(
       alice.address,
       salt,
     );
-
-    console.log("Strategy ID:", strategyId);
 
     // Create A Strategy
     await koraExecutor.createStrategy(alice.address, [], salt);
@@ -94,6 +91,6 @@ describe("Wrapped Encrypted Token Tests", () => {
 
     expect(eWETHAfter).to.be.eq(ethers.parseUnits("0.5", 6));
     expect(eUSDCAfter).to.be.gt(eUSDCBefore);
-    expect(eWETHBefore).to.be.gt(eWETHBefore);
+    expect(eWETHBefore).to.be.gt(eWETHAfter);
   });
 });
