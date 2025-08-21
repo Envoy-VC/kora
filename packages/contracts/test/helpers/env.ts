@@ -52,7 +52,14 @@ export const createEnvironment = async () => {
   const budgetHook = await BudgetHook.deploy(koraExecutor.target);
   await budgetHook.waitForDeployment();
 
-  const hooks = { budgetHook };
+  const PurchaseAmountHook =
+    await ethers.getContractFactory("PurchaseAmountHook");
+  const purchaseAmountHook = await PurchaseAmountHook.deploy(
+    koraExecutor.target,
+  );
+  await purchaseAmountHook.waitForDeployment();
+
+  const hooks = { budgetHook, purchaseAmountHook };
 
   console.log("\n============== Deployed Contracts ==============\n");
   console.log("KoraExecutor:", koraExecutor.target);

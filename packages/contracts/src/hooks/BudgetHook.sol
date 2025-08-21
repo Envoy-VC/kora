@@ -31,10 +31,10 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
         (address user, externalEuint64 externalMaxBudget, bytes memory proof) =
             abi.decode(data, (address, externalEuint64, bytes));
 
-        euint64 maxAllowance = FHE.fromExternal(externalMaxBudget, proof);
-        FHE.isSenderAllowed(maxAllowance);
+        euint64 maxBudget = FHE.fromExternal(externalMaxBudget, proof);
+        FHE.isSenderAllowed(maxBudget);
 
-        _maxBudget[strategyId] = maxAllowance;
+        _maxBudget[strategyId] = maxBudget;
         FHE.allowThis(_maxBudget[strategyId]);
         FHE.allow(_maxBudget[strategyId], user);
 

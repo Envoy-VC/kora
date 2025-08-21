@@ -61,6 +61,16 @@ describe("Wrapped Encrypted Token Tests", () => {
       .add64(ethers.parseUnits("1", 6))
       .encrypt();
 
+    // 2. Purchase Amount Hook
+    // Max Amount of tokens per transaction.
+    const maxPurchaseAmount = await fhevm
+      .createEncryptedInput(
+        await hooks.purchaseAmountHook.getAddress(),
+        koraExecutorAddress,
+      )
+      .add64(ethers.parseUnits("0.5", 6))
+      .encrypt();
+
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
     const strategyHooks = [
@@ -70,6 +80,17 @@ describe("Wrapped Encrypted Token Tests", () => {
           [alice.address, maxBudget.handles[0], maxBudget.inputProof],
         ),
         hook: hooks.budgetHook.target,
+      },
+      {
+        data: abiCoder.encode(
+          ["address", "bytes32", "bytes"],
+          [
+            alice.address,
+            maxPurchaseAmount.handles[0],
+            maxPurchaseAmount.inputProof,
+          ],
+        ),
+        hook: hooks.purchaseAmountHook.target,
       },
     ];
 
