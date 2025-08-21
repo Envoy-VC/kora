@@ -81,6 +81,16 @@ describe("Wrapped Encrypted Token Tests", () => {
       .add64(Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS)
       .encrypt();
 
+    // 4. Frequency Hook
+    const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
+    const frequency = await fhevm
+      .createEncryptedInput(
+        await hooks.frequencyHook.getAddress(),
+        koraExecutorAddress,
+      )
+      .add64(ONE_DAY_IN_SECONDS)
+      .encrypt();
+
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
     const strategyHooks = [
@@ -108,6 +118,13 @@ describe("Wrapped Encrypted Token Tests", () => {
           [alice.address, validUntil.handles[0], validUntil.inputProof],
         ),
         hook: hooks.timeframeHook.target,
+      },
+      {
+        data: abiCoder.encode(
+          ["address", "bytes32", "bytes"],
+          [alice.address, frequency.handles[0], frequency.inputProof],
+        ),
+        hook: hooks.frequencyHook.target,
       },
     ];
 
