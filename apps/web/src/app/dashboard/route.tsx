@@ -2,7 +2,7 @@ import { SidebarProvider } from "@kora/ui/components/sidebar";
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 
-import { MobileSidebar, Sidebar } from "@/components";
+import { ConnectWallet, MobileSidebar, Sidebar } from "@/components";
 
 export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
@@ -27,6 +27,7 @@ function RouteComponent() {
             <Outlet />
           </motion.div>
         </AnimatePresence>
+        <ConnectWallet />
       </div>
     </SidebarProvider>
   );
