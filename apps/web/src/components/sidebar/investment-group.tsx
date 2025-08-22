@@ -5,33 +5,32 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kora/ui/components/sidebar";
-import { SendIcon } from "@kora/ui/icons";
+import { ActivityIcon, PlusIcon } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { TargetIcon } from "lucide-react";
 import { motion } from "motion/react";
 
-const walletGroupItems = [
+const investmentsGroupItems = [
   {
-    href: "/dashboard/send",
-    icon: SendIcon,
-    id: "send-swap",
-    title: "Send Crypto",
+    href: "/dashboard/strategies",
+    icon: ActivityIcon,
+    id: "strategies",
+    title: "My Strategies",
   },
   {
-    href: "/dashboard/goals",
-    icon: TargetIcon,
-    id: "goals",
-    title: "Goals",
+    href: "/dashboard/create-strategy",
+    icon: PlusIcon,
+    id: "create-strategy",
+    title: "Create Strategy",
   },
 ];
 
-export const WalletGroup = () => {
+export const InvestmentsGroup = () => {
   return (
     <SidebarGroup className="border-b">
-      <SidebarGroupLabel>My Account</SidebarGroupLabel>
+      <SidebarGroupLabel>Investments</SidebarGroupLabel>
       <SidebarMenu>
-        {walletGroupItems.map((item) => (
+        {investmentsGroupItems.map((item) => (
           <SidebarMenuItem className="mx-auto w-full" key={item.title}>
             <motion.div className="rounded-2xl">
               <SidebarMenuButton asChild={true} size="lg" tooltip={item.title}>

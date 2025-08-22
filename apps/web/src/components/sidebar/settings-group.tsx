@@ -7,17 +7,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kora/ui/components/sidebar";
-import { SettingsIcon, WalletIcon } from "@kora/ui/icons";
+import { GiftIcon, SettingsIcon, WalletIcon } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 
 const settingsGroupItems = [
   {
-    href: "/dashboard/wc",
+    href: "/dashboard/mint",
     icon: WalletIcon,
-    id: "wc",
-    title: "Wallet Connect",
+    id: "mint",
+    title: "Mint Tokens",
+  },
+  {
+    href: "/dashboard/mint",
+    icon: GiftIcon,
+    id: "mint",
+    title: "Wrap Tokens",
   },
   {
     href: "/dashboard/settings",
@@ -31,7 +37,7 @@ export const SettingsGroup = () => {
   const [hovered, setHovered] = useState<string | null>(null);
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Settings</SidebarGroupLabel>
+      <SidebarGroupLabel>Account</SidebarGroupLabel>
       <SidebarMenu>
         {settingsGroupItems.map((item) => (
           <SidebarMenuItem className="mx-auto w-full" key={item.title}>

@@ -11,10 +11,10 @@ import { PanelRightIcon } from "@kora/ui/icons";
 
 import { SidebarFooter } from "./footer";
 import { SidebarHeader } from "./header";
+import { InvestmentsGroup } from "./investment-group";
 import { MainGroup } from "./main-group";
 import { MobileSidebar } from "./mobile";
 import { SettingsGroup } from "./settings-group";
-import { WalletGroup } from "./wallet-group";
 
 export const Sidebar = () => {
   const { open, setOpen, isMobile, setOpenMobile } = useSidebar();
@@ -48,7 +48,7 @@ export const Sidebar = () => {
           </SidebarGroup>
         )}
         <MainGroup />
-        <WalletGroup />
+        <InvestmentsGroup />
         <SettingsGroup />
       </SidebarContent>
       <SidebarFooter />

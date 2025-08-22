@@ -2,7 +2,7 @@ import type { IconProps } from "../types";
 
 export const PlusIcon = ({
   size = 24,
-  stroke = "#000000",
+  stroke = "currentColor",
   strokeWidth = "1.5",
   ...props
 }: IconProps) => {
