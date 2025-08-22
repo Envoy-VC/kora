@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from "./app/__root";
 import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
+import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
 import { Route as IndexRouteImport } from "./app/index";
 
@@ -28,28 +29,36 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: "/",
   path: "/",
 } as any);
+const DashboardMintRoute = DashboardMintRouteImport.update({
+  getParentRoute: () => DashboardRouteRoute,
+  id: "/mint",
+  path: "/mint",
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard": typeof DashboardIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/dashboard" | "/dashboard/";
+  fullPaths: "/" | "/dashboard" | "/dashboard/mint" | "/dashboard/";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/dashboard";
-  id: "__root__" | "/" | "/dashboard" | "/dashboard/";
+  to: "/" | "/dashboard/mint" | "/dashboard";
+  id: "__root__" | "/" | "/dashboard" | "/dashboard/mint" | "/dashboard/";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -80,15 +89,24 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardIndexRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
+    "/dashboard/mint": {
+      id: "/dashboard/mint";
+      path: "/mint";
+      fullPath: "/dashboard/mint";
+      preLoaderRoute: typeof DashboardMintRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
   }
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardMintRoute: typeof DashboardMintRoute;
   DashboardIndexRoute: typeof DashboardIndexRoute;
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardMintRoute: DashboardMintRoute,
 };
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
