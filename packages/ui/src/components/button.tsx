@@ -17,7 +17,7 @@ import {
 import { cn } from "../lib/utils";
 
 const buttonVariants = cva(
-  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl font-medium text-base outline-none transition-all duration-300 ease-out focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[97.5%] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl text-base outline-none transition-all duration-300 ease-out focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[97.5%] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     defaultVariants: {
       size: "default",
@@ -25,14 +25,14 @@ const buttonVariants = cva(
     },
     variants: {
       size: {
-        default: "h-10 px-4 py-2 has-[>svg]:px-3",
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
         icon: "size-9 rounded-lg",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         sm: "h-8 gap-1.5 rounded-md px-3 text-sm has-[>svg]:px-2.5",
       },
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary disabled:bg-primary/70",
+          "bg-[linear-gradient(180deg,#6B59C8_0%,#523DBF_100%)] text-primary-foreground shadow-xs hover:bg-primary disabled:bg-primary/70",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20",
         "duotone-destructive":
