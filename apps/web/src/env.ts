@@ -1,8 +1,10 @@
 import { createEnv } from "@t3-oss/env-core";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const env = createEnv({
-  client: {},
+  client: {
+    VITE_CONVEX_URL: z.url(),
+  },
   clientPrefix: "VITE_",
   emptyStringAsUndefined: true,
   runtimeEnv: import.meta.env,

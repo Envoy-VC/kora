@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@kora/ui/components/button";
 import { Dialog, DialogContent } from "@kora/ui/components/dialog";
+import { useMutation } from "convex/react";
 import { LockKeyholeIcon } from "lucide-react";
+import { toast } from "sonner";
 import { useAccount, useConnect } from "wagmi";
+
+import { api } from "@/convex/_generated/api";
+import { parseErrorMessage } from "@/lib/helpers/error";
 
 export const ConnectWallet = () => {
   const { address } = useAccount();
   const [open, setOpen] = useState<boolean>(true);
+  const createUser = useMutation(api.functions.user.createUser);
 
   const { connectAsync, connectors } = useConnect();
 
@@ -20,9 +26,19 @@ export const ConnectWallet = () => {
   }, [address]);
 
   const onConnect = async () => {
-    const connector = connectors[0];
-    if (!connector) return;
-    await connectAsync({ connector });
+    try {
+      const connector = connectors[0];
+      if (!connector) {
+        throw new Error("No Wallet found");
+      }
+      const res = await connectAsync({ connector });
+      const connectedAddress = res.accounts[0];
+      await createUser({ address: connectedAddress });
+    } catch (error: unknown) {
+      console.error(error);
+      const message = parseErrorMessage(error);
+      toast.error(message);
+    }
   };
 
   return (
