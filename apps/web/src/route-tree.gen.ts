@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from "./app/__root";
 import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
 import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
+import { Route as DashboardSettingsRouteImport } from "./app/dashboard/settings";
 import { Route as DashboardWrapRouteImport } from "./app/dashboard/wrap";
 import { Route as IndexRouteImport } from "./app/index";
 
@@ -35,6 +36,11 @@ const DashboardWrapRoute = DashboardWrapRouteImport.update({
   id: "/wrap",
   path: "/wrap",
 } as any);
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  getParentRoute: () => DashboardRouteRoute,
+  id: "/settings",
+  path: "/settings",
+} as any);
 const DashboardMintRoute = DashboardMintRouteImport.update({
   getParentRoute: () => DashboardRouteRoute,
   id: "/mint",
@@ -45,12 +51,14 @@ export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
   "/dashboard/mint": typeof DashboardMintRoute;
+  "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
+  "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard": typeof DashboardIndexRoute;
 }
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
   "/dashboard/mint": typeof DashboardMintRoute;
+  "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
@@ -68,15 +77,22 @@ export interface FileRouteTypes {
     | "/"
     | "/dashboard"
     | "/dashboard/mint"
+    | "/dashboard/settings"
     | "/dashboard/wrap"
     | "/dashboard/";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/dashboard/mint" | "/dashboard/wrap" | "/dashboard";
+  to:
+    | "/"
+    | "/dashboard/mint"
+    | "/dashboard/settings"
+    | "/dashboard/wrap"
+    | "/dashboard";
   id:
     | "__root__"
     | "/"
     | "/dashboard"
     | "/dashboard/mint"
+    | "/dashboard/settings"
     | "/dashboard/wrap"
     | "/dashboard/";
   fileRoutesById: FileRoutesById;
@@ -116,6 +132,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardWrapRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
+    "/dashboard/settings": {
+      id: "/dashboard/settings";
+      path: "/settings";
+      fullPath: "/dashboard/settings";
+      preLoaderRoute: typeof DashboardSettingsRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
     "/dashboard/mint": {
       id: "/dashboard/mint";
       path: "/mint";
@@ -128,6 +151,7 @@ declare module "@tanstack/react-router" {
 
 interface DashboardRouteRouteChildren {
   DashboardMintRoute: typeof DashboardMintRoute;
+  DashboardSettingsRoute: typeof DashboardSettingsRoute;
   DashboardWrapRoute: typeof DashboardWrapRoute;
   DashboardIndexRoute: typeof DashboardIndexRoute;
 }
@@ -135,6 +159,7 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardMintRoute: DashboardMintRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardWrapRoute: DashboardWrapRoute,
 };
 

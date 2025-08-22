@@ -1,3 +1,4 @@
+import { Toaster } from "@kora/ui/components/sonner";
 import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router";
 
 import { ProviderTree } from "@/providers";
@@ -10,6 +11,12 @@ const RootComponent = () => {
       <HeadContent />
       <ProviderTree>
         <Outlet />
+        <Toaster
+          richColors={true}
+          toastOptions={{
+            className: "!rounded-2xl",
+          }}
+        />
       </ProviderTree>
     </>
   );

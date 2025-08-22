@@ -68,6 +68,9 @@ importers:
       serialize-error:
         specifier: ^12.0.0
         version: 12.0.0
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       usehooks-ts:
         specifier: ^3.1.1
         version: 3.1.1(react@19.1.1)
