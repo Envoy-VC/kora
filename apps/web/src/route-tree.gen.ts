@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./app/__root";
+import { Route as DashboardCreateStrategyRouteImport } from "./app/dashboard/create-strategy";
 import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
 import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
@@ -46,10 +47,16 @@ const DashboardMintRoute = DashboardMintRouteImport.update({
   id: "/mint",
   path: "/mint",
 } as any);
+const DashboardCreateStrategyRoute = DashboardCreateStrategyRouteImport.update({
+  getParentRoute: () => DashboardRouteRoute,
+  id: "/create-strategy",
+  path: "/create-strategy",
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
@@ -66,6 +74,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
   "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/dashboard"
+    | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
     | "/dashboard/wrap"
@@ -83,6 +93,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
+    | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
     | "/dashboard/wrap"
@@ -91,6 +102,7 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/dashboard"
+    | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
     | "/dashboard/wrap"
@@ -146,10 +158,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardMintRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
+    "/dashboard/create-strategy": {
+      id: "/dashboard/create-strategy";
+      path: "/create-strategy";
+      fullPath: "/dashboard/create-strategy";
+      preLoaderRoute: typeof DashboardCreateStrategyRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
   }
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardCreateStrategyRoute: typeof DashboardCreateStrategyRoute;
   DashboardMintRoute: typeof DashboardMintRoute;
   DashboardSettingsRoute: typeof DashboardSettingsRoute;
   DashboardWrapRoute: typeof DashboardWrapRoute;
@@ -157,6 +177,7 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardCreateStrategyRoute: DashboardCreateStrategyRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardMintRoute: DashboardMintRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
