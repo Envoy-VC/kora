@@ -95,7 +95,7 @@ function Button({
   return (
     <motion.button
       animate={{ width: width ?? undefined }}
-      className={cn(buttonVariants({ className, size, variant }))}
+      className={cn(buttonVariants({ className, size, variant }), "")}
       data-slot="button"
       initial={false}
       style={{ opacity: width === null ? 0 : 1, width: width ?? "auto" }}
@@ -121,7 +121,10 @@ function Button({
             exit={{ opacity: 0, scale: 0 }}
             initial={{ opacity: 0, scale: 0 }}
             key={`icon-${iconKey}`}
-            transition={{ duration: 0.15, ease: cubicBezier(0.85, 0, 0.15, 1) }}
+            transition={{
+              duration: 0.15,
+              ease: cubicBezier(0.85, 0, 0.15, 1),
+            }}
           >
             {icon}
           </motion.div>
@@ -131,7 +134,7 @@ function Button({
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           animate={{ opacity: 1, x: 0 }}
-          className={innerCls}
+          className={cn(innerCls)}
           exit={{ opacity: 0, x: -15 }}
           initial={{ opacity: 0, x: 15 }}
           key={animateKey}

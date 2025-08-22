@@ -20,9 +20,9 @@ const settingsGroupItems = [
     title: "Mint Tokens",
   },
   {
-    href: "/dashboard/mint",
+    href: "/dashboard/wrap",
     icon: GiftIcon,
-    id: "mint",
+    id: "wrap",
     title: "Wrap Tokens",
   },
   {
