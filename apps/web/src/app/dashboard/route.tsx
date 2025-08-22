@@ -15,18 +15,19 @@ function RouteComponent() {
       <Sidebar />
       <div className="flex h-full w-full flex-col">
         <MobileSidebar />
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="h-screen p-6"
-            exit={{ opacity: 1 }}
-            initial={{ opacity: 0, y: -20 }}
-            key={pathname}
-            transition={{ type: "tween" }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <div className="-translate-y-[20px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              animate={{ opacity: 1, y: 20 }}
+              className="h-screen p-6"
+              initial={{}}
+              key={pathname}
+              transition={{ type: "spring" }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </div>
         <ConnectWallet />
       </div>
     </SidebarProvider>
