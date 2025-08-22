@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./app/__root";
+import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
 import { Route as IndexRouteImport } from "./app/index";
 
@@ -22,31 +23,38 @@ const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
 } as any);
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  getParentRoute: () => DashboardRouteRoute,
+  id: "/",
+  path: "/",
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
-  "/dashboard": typeof DashboardRouteRoute;
+  "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/": typeof DashboardIndexRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
-  "/dashboard": typeof DashboardRouteRoute;
+  "/dashboard": typeof DashboardIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
-  "/dashboard": typeof DashboardRouteRoute;
+  "/dashboard": typeof DashboardRouteRouteWithChildren;
+  "/dashboard/": typeof DashboardIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/dashboard";
+  fullPaths: "/" | "/dashboard" | "/dashboard/";
   fileRoutesByTo: FileRoutesByTo;
   to: "/" | "/dashboard";
-  id: "__root__" | "/" | "/dashboard";
+  id: "__root__" | "/" | "/dashboard" | "/dashboard/";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
-  DashboardRouteRoute: typeof DashboardRouteRoute;
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren;
 }
 
 declare module "@tanstack/react-router" {
@@ -65,11 +73,30 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/dashboard/": {
+      id: "/dashboard/";
+      path: "/";
+      fullPath: "/dashboard/";
+      preLoaderRoute: typeof DashboardIndexRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
   }
 }
 
+interface DashboardRouteRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute;
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+};
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
-  DashboardRouteRoute: DashboardRouteRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   IndexRoute: IndexRoute,
 };
 export const routeTree = rootRouteImport

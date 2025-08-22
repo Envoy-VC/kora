@@ -7,6 +7,7 @@
     "@tanstack/react-router": "^1.131.27",
     "@tanstack/router-devtools": "^1.131.27",
     "lucide-react": "^0.540.0",
+    "motion": "^12.23.12",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "usehooks-ts": "^3.1.1",
