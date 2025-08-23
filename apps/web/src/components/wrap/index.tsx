@@ -4,6 +4,8 @@ import { Button } from "@kora/ui/components/button";
 import { GiftIcon, KoraLogo } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
 
+import { useBalances } from "@/hooks";
+
 const tokens = {
   usdc: {
     icon: "/icons/usdc.svg",
@@ -44,6 +46,15 @@ const multipliers = [
 
 export const WrapTokens = () => {
   const [activeToken, setActiveToken] = useState<"weth" | "usdc">("weth");
+  const balances = useBalances();
+  const [amount, setAmount] = useState<number>(0);
+
+  const onMultiplierClick = (multiplier: (typeof multipliers)[0]) => {
+    const amountAvailable = balances[activeToken].value;
+    const amountToWrap = Number(amountAvailable) * multiplier.value;
+    const parsedAmount = amountToWrap / 10 ** balances[activeToken].decimals;
+    setAmount(parsedAmount);
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl rounded-2xl border bg-card">
@@ -101,12 +112,22 @@ export const WrapTokens = () => {
             <div className="text-sm">I will wrap</div>
             <div className="flex w-tull flex-col gap-3 rounded-xl border p-3">
               <div className="text-neutral-500 text-sm">
-                Available Balance: 0.034 {tokens[activeToken].symbol}
+                Available Balance: {balances[activeToken].formatted}{" "}
+                {tokens[activeToken].symbol}
               </div>
               <div className="flex flex-row items-center gap-2">
                 <input
                   className="w-full border-none text-2xl outline-none placeholder:text-2xl"
+                  onChange={(e) => {
+                    if (e.target.value === "0" || e.target.value === "") {
+                      setAmount(0);
+                      return;
+                    }
+                    setAmount(Number(e.target.value));
+                  }}
                   placeholder="0.00"
+                  type="number"
+                  value={amount}
                 />
                 <div className="flex min-w-fit flex-row items-center gap-1">
                   <img
@@ -125,6 +146,7 @@ export const WrapTokens = () => {
                     <button
                       className="w-full cursor-pointer rounded-lg border bg-card px-2 py-1 text-neutral-500 text-xs"
                       key={multiplier.id}
+                      onClick={() => onMultiplierClick(multiplier)}
                       type="button"
                     >
                       {multiplier.title}
@@ -138,11 +160,15 @@ export const WrapTokens = () => {
             <div>Details</div>
             <div className="flex flex-row items-center justify-between gap-2 text-sm">
               <div className="text-neutral-500">You Deposit</div>
-              <div>0.034 {tokens[activeToken].symbol}</div>
+              <div>
+                {amount} {tokens[activeToken].symbol}
+              </div>
             </div>
             <div className="flex flex-row items-center justify-between gap-2 text-sm">
               <div className="text-neutral-500">You Receive</div>
-              <div>0.034 e{tokens[activeToken].symbol}</div>
+              <div>
+                {amount} e{tokens[activeToken].symbol}
+              </div>
             </div>
           </div>
         </div>

@@ -30,7 +30,7 @@ export const useBalances = () => {
     const wethBalance = tokenBalances?.[1].result ?? 0n;
     const nativeBalance = ethBalance?.value ?? 0n;
 
-    const decimals = 6;
+    const decimals = 18;
 
     return {
       native: {
