@@ -1,0 +1,56 @@
+import { v } from "convex/values";
+
+import { mutation, type QueryCtx, query } from "../_generated/server";
+import { strategySchema } from "../models";
+import type { Nullable, User } from "../types";
+import { getUserByAddress } from "./user";
+
+export const createStrategy = mutation({
+  args: strategySchema,
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("strategies", args);
+    const strategy = await ctx.db.get(id);
+    if (!strategy) throw new Error("Failed to create strategy");
+    return strategy;
+  },
+});
+
+const strategyById = async (ctx: QueryCtx, strategyId: string) => {
+  const strategy = await ctx.db
+    .query("strategies")
+    .withIndex("by_strategy_id", (q) => q.eq("strategyId", strategyId))
+    .unique();
+  return strategy;
+};
+
+export const getStrategyById = query({
+  args: { strategyId: v.string() },
+  handler: async (ctx, args) => {
+    return await strategyById(ctx, args.strategyId);
+  },
+});
+
+export const getStrategiesForUser = query({
+  args: {
+    userAddress: v.optional(v.string()),
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    let user: Nullable<User> = null;
+    if (args.userId) {
+      user = await ctx.db.get(args.userId);
+    }
+
+    if (args.userAddress) {
+      user = await getUserByAddress(ctx, args.userAddress);
+    }
+
+    if (!user) throw new Error("User not found");
+
+    const strategies = await ctx.db
+      .query("strategies")
+      .withIndex("by_user_id", (q) => q.eq("user", user._id))
+      .collect();
+    return strategies;
+  },
+});

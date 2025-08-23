@@ -62,6 +62,8 @@ export const WrapTokens = () => {
   const [activeToken, setActiveToken] = useState<"weth" | "usdc">("weth");
   const [amount, setAmount] = useState<number>(0);
 
+  const [isWrapping, setIsWrapping] = useState(false);
+
   const onMultiplierClick = (multiplier: (typeof multipliers)[0]) => {
     const amountAvailable = balances[activeToken].value;
     const amountToWrap = Number(amountAvailable) * multiplier.value;
@@ -73,6 +75,7 @@ export const WrapTokens = () => {
     const id = toast.loading("Wrapping Tokens");
     try {
       setState("in-progress");
+      setIsWrapping(true);
       if (!address) {
         throw new Error("Connect your wallet");
       }
@@ -117,6 +120,8 @@ export const WrapTokens = () => {
       setState("error");
       await sleep("2s");
       setState("idle");
+    } finally {
+      setIsWrapping(false);
     }
   };
 
@@ -150,6 +155,7 @@ export const WrapTokens = () => {
                       ? "border-primary"
                       : "border-border",
                   )}
+                  disabled={isWrapping}
                   key={`wrap-button-${token.id}`}
                   onClick={() => setActiveToken(token.id)}
                   type="button"
@@ -182,6 +188,7 @@ export const WrapTokens = () => {
               <div className="flex flex-row items-center gap-2">
                 <input
                   className="w-full border-none text-2xl outline-none placeholder:text-2xl"
+                  disabled={isWrapping}
                   onChange={(e) => {
                     if (e.target.value === "0" || e.target.value === "") {
                       setAmount(0);
@@ -209,6 +216,7 @@ export const WrapTokens = () => {
                   return (
                     <button
                       className="w-full cursor-pointer rounded-lg border bg-card px-2 py-1 text-neutral-500 text-xs"
+                      disabled={isWrapping}
                       key={multiplier.id}
                       onClick={() => onMultiplierClick(multiplier)}
                       type="button"

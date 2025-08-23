@@ -98,6 +98,7 @@ export const ThreeStepButton = ({
   return (
     <Button
       animateKey={state}
+      disabled={state !== "idle"}
       icon={buttonIcon}
       iconKey={state}
       onClick={handleOnClick}
