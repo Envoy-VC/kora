@@ -49,6 +49,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
     event IntentAccepted(bytes32 intentId, bytes32 indexed strategyId, address indexed user);
     event IntentRejected(bytes32 intentId, bytes32 indexed strategyId, address indexed user, bytes revertData);
     event BatchRequested(uint256 indexed requestId);
+    event BatchExecuted(uint256 indexed requestId);
 
     // -----------------------------------------------------------
     //                          Constructor
@@ -367,6 +368,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         }
 
         batch.isPending = false;
+        emit BatchExecuted(requestId);
     }
 
     function computeStrategyId(address user, bytes32 salt) public view returns (bytes32) {
