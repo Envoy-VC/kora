@@ -4,6 +4,8 @@ import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount, useDisconnect } from "wagmi";
 
+import { EncryptedTokenBalance } from "@/components";
+
 export const Route = createFileRoute("/dashboard/settings")({
   component: RouteComponent,
 });
@@ -45,6 +47,14 @@ function RouteComponent() {
             </Button>
           </div>
         )}
+      </div>
+      <div className="flex flex-row items-center justify-between gap-2 rounded-xl bg-[#0B0B0D] p-4">
+        <div className="text-neutral-300">Encrypted USDC Balance</div>
+        <EncryptedTokenBalance token="eUSDC" />
+      </div>
+      <div className="flex flex-row items-center justify-between gap-2 rounded-xl bg-[#0B0B0D] p-4">
+        <div className="text-neutral-300">Encrypted WETH Balance</div>
+        <EncryptedTokenBalance token="eWETH" />
       </div>
     </div>
   );

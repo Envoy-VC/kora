@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: safe */
 import { readContract } from "@wagmi/core";
 import {
   createInstance,
@@ -5,6 +6,7 @@ import {
   initSDK,
   SepoliaConfig,
 } from "@zama-fhe/relayer-sdk/bundle";
+import nstr from "nstr";
 import { useLocalStorage } from "usehooks-ts";
 import type { TypedData } from "viem";
 import { useAccount, useSignTypedData } from "wagmi";
@@ -24,22 +26,25 @@ const useFhevmStore = create<FheVmStore>((set) => ({
   setFhevm: (instance: FhevmInstance) => set({ fhevm: instance }),
 }));
 
-interface EncryptedBalances {
-  eUSDC: {
-    latest?: {
-      handle: string;
-      balance: number;
+type EncryptedBalances = Record<
+  string,
+  {
+    eUSDC: {
+      latest?: {
+        handle: string;
+        balance: number;
+      };
+      history: Record<string, number>;
     };
-    history: Record<string, number>;
-  };
-  eWETH: {
-    latest?: {
-      handle: string;
-      balance: number;
+    eWETH: {
+      latest?: {
+        handle: string;
+        balance: number;
+      };
+      history: Record<string, number>;
     };
-    history: Record<string, number>;
-  };
-}
+  }
+>;
 
 export const useFhevm = () => {
   const { address } = useAccount();
@@ -48,10 +53,7 @@ export const useFhevm = () => {
   const { fhevm, setFhevm } = useFhevmStore();
 
   const [encryptedBalances, setEncryptedBalances] =
-    useLocalStorage<EncryptedBalances>("encryptedBalances", {
-      eUSDC: { history: {} },
-      eWETH: { history: {} },
-    });
+    useLocalStorage<EncryptedBalances>("encryptedBalances", {});
 
   const getFhevmInstance = async () => {
     if (!fhevm) {
@@ -74,12 +76,12 @@ export const useFhevm = () => {
     });
 
     // Check if fetched handle is the latest one.
-    if (encryptedBalances[token].latest?.handle === handle) {
-      return BigInt(encryptedBalances[token].latest.balance);
+    if (encryptedBalances[address]?.[token].latest?.handle === handle) {
+      return BigInt(encryptedBalances[address]?.[token].latest?.balance);
     }
 
     // Check in local storage if handle is already stored
-    const storedBalance = encryptedBalances[token].history[handle];
+    const storedBalance = encryptedBalances[address]?.[token].history?.handle;
     if (storedBalance) {
       return BigInt(storedBalance);
     }
@@ -127,11 +129,18 @@ export const useFhevm = () => {
 
     // Store the handle and balance in local storage
     const copied = { ...encryptedBalances };
-    copied[token].history[handle] = Number(balance);
-    copied[token].latest = { balance: Number(balance), handle };
-    setEncryptedBalances(copied);
-
-    return balance;
+    if (!copied[address]) {
+      copied[address] = { eUSDC: { history: {} }, eWETH: { history: {} } };
+      copied[address]![token].history[handle] = Number(balance);
+      copied[address]![token].latest = { balance: Number(balance), handle };
+      setEncryptedBalances(copied);
+      return balance;
+    } else {
+      copied[address]![token].history[handle] = Number(balance);
+      copied[address]![token].latest = { balance: Number(balance), handle };
+      setEncryptedBalances(copied);
+      return balance;
+    }
   };
 
   const createEncryptedUint64 = async (
@@ -148,5 +157,31 @@ export const useFhevm = () => {
       .encrypt();
   };
 
-  return { createEncryptedUint64, getEncryptedTokenBalance, getFhevmInstance };
+  const getUserEncryptedBalance = (token: "eWETH" | "eUSDC") => {
+    const defaultBalance = {
+      decimals: 6,
+      formatted: "0",
+      symbol: token,
+      value: 0n,
+    };
+    if (!address) return defaultBalance;
+    const res = encryptedBalances[address];
+    if (!res) return defaultBalance;
+    if (res[token].latest) {
+      return {
+        decimals: 6,
+        formatted: nstr(Number(res[token].latest.balance) / 10 ** 6),
+        symbol: token,
+        value: BigInt(res[token].latest.balance),
+      };
+    }
+    return defaultBalance;
+  };
+
+  return {
+    createEncryptedUint64,
+    getEncryptedTokenBalance,
+    getFhevmInstance,
+    getUserEncryptedBalance,
+  };
 };
