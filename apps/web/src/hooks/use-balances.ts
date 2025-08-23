@@ -8,9 +8,9 @@ import { Contracts } from "@/data/contracts";
 
 export const useBalances = () => {
   const { address } = useAccount();
-  const { data: ethBalance } = useBalance();
+  const { data: ethBalance, refetch: ethRefetch } = useBalance();
 
-  const { data: tokenBalances } = useReadContracts({
+  const { data: tokenBalances, refetch: tokenRefetch } = useReadContracts({
     contracts: [
       {
         ...Contracts.usdc,
@@ -30,12 +30,12 @@ export const useBalances = () => {
     const wethBalance = tokenBalances?.[1].result ?? 0n;
     const nativeBalance = ethBalance?.value ?? 0n;
 
-    const decimals = 18;
+    const decimals = 6;
 
     return {
       native: {
         decimals,
-        formatted: nstr(Number(nativeBalance) / 10 ** decimals),
+        formatted: nstr(Number(nativeBalance) / 10 ** 18),
         symbol: "ETH",
         value: nativeBalance,
       },
@@ -54,5 +54,9 @@ export const useBalances = () => {
     };
   }, [tokenBalances, ethBalance]);
 
-  return balances;
+  const revalidateAll = async () => {
+    await ethRefetch();
+    await tokenRefetch();
+  };
+  return { balances, revalidateAll };
 };

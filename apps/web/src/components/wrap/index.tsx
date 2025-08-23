@@ -1,10 +1,20 @@
 import { useState } from "react";
 
-import { Button } from "@kora/ui/components/button";
 import { GiftIcon, KoraLogo } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
+import { toast } from "sonner";
+import { useAccount, useWriteContract } from "wagmi";
 
+import { Contracts } from "@/data/contracts";
 import { useBalances } from "@/hooks";
+import { sleep } from "@/lib/helpers";
+import { parseErrorMessage } from "@/lib/helpers/error";
+import { waitForTransactionReceipt } from "@/lib/wagmi";
+
+import {
+  ThreeStepButton,
+  type ThreeStepButtonCallback,
+} from "../three-step-button";
 
 const tokens = {
   usdc: {
@@ -45,8 +55,11 @@ const multipliers = [
 ];
 
 export const WrapTokens = () => {
+  const { address } = useAccount();
+  const { balances, revalidateAll } = useBalances();
+  const { writeContractAsync } = useWriteContract();
+
   const [activeToken, setActiveToken] = useState<"weth" | "usdc">("weth");
-  const balances = useBalances();
   const [amount, setAmount] = useState<number>(0);
 
   const onMultiplierClick = (multiplier: (typeof multipliers)[0]) => {
@@ -54,6 +67,57 @@ export const WrapTokens = () => {
     const amountToWrap = Number(amountAvailable) * multiplier.value;
     const parsedAmount = amountToWrap / 10 ** balances[activeToken].decimals;
     setAmount(parsedAmount);
+  };
+
+  const onWrapClick: ThreeStepButtonCallback = async ({ setState }) => {
+    const id = toast.loading("Wrapping Tokens");
+    try {
+      setState("in-progress");
+      if (!address) {
+        throw new Error("Connect your wallet");
+      }
+      const amountToWrap = amount * 10 ** balances[activeToken].decimals;
+      const isAvailable = amountToWrap <= balances[activeToken].value;
+      if (!isAvailable) {
+        throw new Error("Insufficient Balance");
+      }
+      await sleep("1s");
+      toast.loading(`Approving ${tokens[activeToken].symbol} Tokens...`, {
+        id,
+      });
+      const token = activeToken === "usdc" ? Contracts.usdc : Contracts.weth;
+      const eToken = activeToken === "usdc" ? Contracts.eUSDC : Contracts.eWETH;
+      // 1. Approve Tokens to Encrypted ERC-20 Token
+      const hash = await writeContractAsync({
+        ...token,
+        args: [eToken.address, BigInt(amountToWrap)],
+        functionName: "approve",
+      });
+      await waitForTransactionReceipt(hash);
+
+      // 2. Deposit Tokens to Encrypted ERC-20 Token
+      toast.loading(`Depositing ${tokens[activeToken].symbol} Tokens...`, {
+        id,
+      });
+      const hash2 = await writeContractAsync({
+        ...eToken,
+        args: [BigInt(amountToWrap)],
+        functionName: "deposit",
+      });
+      await waitForTransactionReceipt(hash2);
+
+      setState("success");
+      toast.success("Tokens Wrapped Successfully", { id });
+      await revalidateAll();
+      await sleep("2s");
+      setState("idle");
+    } catch (error) {
+      const message = parseErrorMessage(error);
+      toast.error(message, { id });
+      setState("error");
+      await sleep("2s");
+      setState("idle");
+    }
   };
 
   return (
@@ -191,7 +255,16 @@ export const WrapTokens = () => {
             </div>
           </div>
         </div>
-        <Button className="h-8">Continue</Button>
+        <ThreeStepButton
+          buttonProps={{}}
+          onClick={onWrapClick}
+          text={{
+            error: "Error",
+            idle: "Wrap Tokens",
+            inProgress: "Wrapping...",
+            success: "Wrapped",
+          }}
+        />
       </div>
     </div>
   );

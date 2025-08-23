@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Input } from "@kora/ui/components/input";
 import { toast } from "sonner";
-import { parseEther } from "viem";
+import { parseUnits } from "viem";
 import { useAccount, useWriteContract } from "wagmi";
 
 import { Contracts } from "@/data/contracts";
@@ -28,7 +28,7 @@ export const Mint = () => {
       if (!address) {
         throw new Error("Connect your wallet");
       }
-      const value = parseEther((amount ?? 0).toString());
+      const value = parseUnits((amount ?? 0).toString(), 6);
       if (value === 0n) {
         throw new Error("Amount must be greater than 0");
       }
