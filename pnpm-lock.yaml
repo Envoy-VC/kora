@@ -71,6 +71,9 @@ importers:
       motion:
         specifier: ^12.23.12
         version: 12.23.12(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      nstr:
+        specifier: ^0.1.2
+        version: 0.1.2
       react:
         specifier: ^19.1.1
         version: 19.1.1
@@ -3440,6 +3443,9 @@ packages:
   normalize-range@0.1.2:
     resolution: {integrity: sha512-bdok/XvKII3nUpklnV6P2hxtMNrCboOjAcyBuQnWEhO665FwrSNRxU+AqpsyvO6LgGYPspN+lu5CLtw4jPRKNA==}
     engines: {node: '>=0.10.0'}
+
+  nstr@0.1.2:
+    resolution: {integrity: sha512-/MYJwAnoHqYeLD2c3Kx2CW4vxbjpj70WZJxjoBb9aYbRC/q0Kueue21JwCfGM87NXHAHhxskpzF9OWU/a5POCQ==}
 
   obj-multiplex@1.0.0:
     resolution: {integrity: sha512-0GNJAOsHoBHeNTvl5Vt6IWnpUEcc3uSRxzBri7EDyIcMgYvnY2JL2qdeV5zTMjWQX5OHcD5amcW2HFfDh0gjIA==}
@@ -8450,6 +8456,8 @@ snapshots:
   normalize-path@3.0.0: {}
 
   normalize-range@0.1.2: {}
+
+  nstr@0.1.2: {}
 
   obj-multiplex@1.0.0:
     dependencies:

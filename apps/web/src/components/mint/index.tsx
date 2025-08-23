@@ -1,19 +1,19 @@
 import { useState } from "react";
 
 import { Input } from "@kora/ui/components/input";
+import { toast } from "sonner";
 import { parseEther } from "viem";
 import { useAccount, useWriteContract } from "wagmi";
 
 import { Contracts } from "@/data/contracts";
 import { sleep } from "@/lib/helpers";
 import { parseErrorMessage } from "@/lib/helpers/error";
+import { waitForTransactionReceipt } from "@/lib/wagmi";
 
 import {
   ThreeStepButton,
   type ThreeStepButtonCallback,
 } from "../three-step-button";
-import { waitForTransactionReceipt } from "@/lib/wagmi";
-import { toast } from "sonner";
 
 export const Mint = () => {
   const { address } = useAccount();
@@ -35,10 +35,10 @@ export const Mint = () => {
       const tokenToMint = token === "usdc" ? Contracts.usdc : Contracts.weth;
       const hash = await writeContractAsync({
         ...tokenToMint,
-        functionName: 'mint',
         args: [address, value],
-      })
-      await waitForTransactionReceipt(hash)
+        functionName: "mint",
+      });
+      await waitForTransactionReceipt(hash);
       setAmount(undefined);
       setState("success");
       toast.success("Tokens Minted Successfully");
