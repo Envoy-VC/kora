@@ -70,7 +70,7 @@ export const useFhevm = () => {
 
     const contract = token === "eWETH" ? Contracts.eWETH : Contracts.eUSDC;
     const handle = await readContract(wagmiConfig, {
-      ...Contracts.eWETH,
+      ...contract,
       args: [address ?? "0x"],
       functionName: "balanceOf",
     });

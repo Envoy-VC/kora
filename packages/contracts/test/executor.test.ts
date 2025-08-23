@@ -156,9 +156,7 @@ describe("Wrapped Encrypted Token Tests", () => {
       },
     ]);
 
-    const r = await executeTx.wait();
-    console.log(r?.gasUsed.toString());
-    await fhevm.awaitDecryptionOracle();
+    await executeTx.wait();
 
     const { clearBalance: eWETHAfter } = await getEncryptedTokenBalance(
       eWETH,

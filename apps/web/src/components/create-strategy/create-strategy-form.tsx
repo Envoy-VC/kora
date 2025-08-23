@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 
 import { useState } from "react";
 
@@ -45,32 +45,28 @@ import { parseErrorMessage } from "@/lib/helpers/error";
 import { buildStrategyHooks } from "@/lib/helpers/strategy";
 import { wagmiConfig, waitForTransactionReceipt } from "@/lib/wagmi";
 
-const formSchema = z
-  .object({
-    frequency: z.object({
-      duration: z.number({ message: "Frequency Duration is required" }).min(0),
-      unit: z.union([
-        z.literal("hours"),
-        z.literal("days"),
-        z.literal("weeks"),
-        z.literal("months"),
-        z.literal("years"),
-      ]),
-    }),
-    maxBudget: z.number({ message: "Max Budget is required" }).min(0),
-    maxPurchaseAmount: z
-      .number({ message: "Max Purchase Amount is required" })
-      .min(0),
-    user: z.string({ message: "User is required" }).refine((v) => {
-      return /^0x[a-fA-F0-9]{40}$/.test(v);
-    }, "Invalid Ethereum address"),
-    validUntil: z.date({ message: "Valid Until is required" }),
-  })
-  .refine((args) => {
-    if (args.maxBudget < args.maxPurchaseAmount) {
-      return false;
-    }
-  });
+const formSchema = z.object({
+  frequency: z.object({
+    duration: z
+      .number({ message: "Frequency Duration is required" })
+      .positive(),
+    unit: z.union([
+      z.literal("hours"),
+      z.literal("days"),
+      z.literal("weeks"),
+      z.literal("months"),
+      z.literal("years"),
+    ]),
+  }),
+  maxBudget: z.number({ message: "Max Budget is required" }).positive(),
+  maxPurchaseAmount: z
+    .number({ message: "Max Purchase Amount is required" })
+    .positive(),
+  user: z.string({ message: "User is required" }).refine((v) => {
+    return /^0x[a-fA-F0-9]{40}$/.test(v);
+  }, "Invalid Ethereum address"),
+  validUntil: z.date({ message: "Valid Until is required" }),
+});
 
 export type FormResponse = z.infer<typeof formSchema>;
 
@@ -101,23 +97,23 @@ export const CreateStrategyForm = () => {
       await sleep("1s");
       toast.loading(`Approving Kora Executor...`, { id });
       // 1. Approve Max Tokens
-      const toApprove = 2n ** 64n - 1n;
-      const encApproveAmount = await createEncryptedUint64(
-        toApprove,
-        Contracts.eWETH.address,
-      );
-      if (!encApproveAmount?.handles[0])
-        throw new Error("Failed to create encrypted amount");
-      const approveHash = await writeContractAsync({
-        ...Contracts.eWETH,
-        args: [
-          Contracts.koraExecutor.address,
-          toHex(encApproveAmount.handles[0]),
-          toHex(encApproveAmount?.inputProof),
-        ],
-        functionName: "approve",
-      });
-      await waitForTransactionReceipt(approveHash);
+      // const toApprove = 2n ** 64n - 1n;
+      // const encApproveAmount = await createEncryptedUint64(
+      //   toApprove,
+      //   Contracts.eWETH.address,
+      // );
+      // if (!encApproveAmount?.handles[0])
+      //   throw new Error("Failed to create encrypted amount");
+      // const approveHash = await writeContractAsync({
+      //   ...Contracts.eWETH,
+      //   args: [
+      //     Contracts.koraExecutor.address,
+      //     toHex(encApproveAmount.handles[0]),
+      //     toHex(encApproveAmount?.inputProof),
+      //   ],
+      //   functionName: "approve",
+      // });
+      // await waitForTransactionReceipt(approveHash);
       const encAmount = await createEncryptedUint64(
         parseUnits(values.maxPurchaseAmount.toString(), 6),
         Contracts.koraExecutor.address,
@@ -125,7 +121,7 @@ export const CreateStrategyForm = () => {
       if (!encAmount?.handles[0])
         throw new Error("Failed to create encrypted amount");
       // 3. Build Strategy Hooks
-      toast.loading("Building Strategy Hooks...");
+      toast.loading("Building Strategy Hooks...", { id });
       const hooks = await buildStrategyHooks({
         encryptFn: createEncryptedUint64,
         frequency: values.frequency,
@@ -134,7 +130,7 @@ export const CreateStrategyForm = () => {
         userAddress: address,
         validUntil: values.validUntil,
       });
-      toast.loading("Creating Strategy...");
+      toast.loading("Creating Strategy...", { id });
       const salt = toHex(randomBytes(32));
       const strategyId = await readContract(wagmiConfig, {
         ...Contracts.koraExecutor,
@@ -165,7 +161,7 @@ export const CreateStrategyForm = () => {
         strategyId,
         userAddress: address,
       });
-      toast.success("Strategy created successfully");
+      toast.success("Strategy created successfully", { id });
     } catch (error) {
       console.log(error);
       const message = parseErrorMessage(error);
@@ -207,9 +203,16 @@ export const CreateStrategyForm = () => {
                     <Input
                       className="!rounded-xl w-full"
                       placeholder="0.00"
+                      type="number"
                       {...field}
                       disabled={isSubmitting}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value),
+                        )
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -226,11 +229,18 @@ export const CreateStrategyForm = () => {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="0.00"
-                      {...field}
                       className="!rounded-xl w-full"
                       disabled={isSubmitting}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      placeholder="0.00"
+                      type="number"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value),
+                        )
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -255,7 +265,11 @@ export const CreateStrategyForm = () => {
                           {...field}
                           disabled={isSubmitting}
                           onChange={(e) =>
-                            field.onChange(Number(e.target.value))
+                            field.onChange(
+                              e.target.value === ""
+                                ? undefined
+                                : parseFloat(e.target.value),
+                            )
                           }
                         />
                       </FormControl>
@@ -281,10 +295,11 @@ export const CreateStrategyForm = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="years">Years</SelectItem>
-                          <SelectItem value="months">Months</SelectItem>
-                          <SelectItem value="weeks">Weeks</SelectItem>
-                          <SelectItem value="days">Days</SelectItem>
+                          <SelectItem value="years">Year</SelectItem>
+                          <SelectItem value="months">Month</SelectItem>
+                          <SelectItem value="weeks">Week</SelectItem>
+                          <SelectItem value="days">Day</SelectItem>
+                          <SelectItem value="hours">Hour</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

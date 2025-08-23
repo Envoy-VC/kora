@@ -13,6 +13,9 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as functions_actions from "../functions/actions.js";
+import type * as functions_helpers from "../functions/helpers.js";
+import type * as functions_koraExecutor from "../functions/abi.js";
 import type * as functions_strategy from "../functions/strategy.js";
 import type * as functions_user from "../functions/user.js";
 import type * as models_index from "../models/index.js";
@@ -27,6 +30,9 @@ import type * as types_index from "../types/index.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "functions/actions": typeof functions_actions;
+  "functions/helpers": typeof functions_helpers;
+  "functions/koraExecutor": typeof functions_koraExecutor;
   "functions/strategy": typeof functions_strategy;
   "functions/user": typeof functions_user;
   "models/index": typeof models_index;

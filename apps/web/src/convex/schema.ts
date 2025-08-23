@@ -5,7 +5,8 @@ import { strategySchema, userSchema } from "./models";
 const schema = defineSchema({
   strategies: defineTable(strategySchema)
     .index("by_strategy_id", ["strategyId"])
-    .index("by_user_id", ["user"]),
+    .index("by_user_id", ["user"])
+    .index("by_completion_status", ["isCompleted"]),
   users: defineTable(userSchema).index("by_address", ["address"]),
 });
 

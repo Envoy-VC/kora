@@ -48,6 +48,7 @@ export const buildStrategyHooks = async ({
   // 1. Budget Hook
   const encMaxBudget = await encryptFn(
     parseUnits(maxBudget.toString(), 6),
+    Contracts.hooks.budgetHook.address,
     Contracts.koraExecutor.address,
   );
   if (!encMaxBudget?.handles[0])
@@ -55,6 +56,7 @@ export const buildStrategyHooks = async ({
   // 2. Purchase Amount Hook
   const encMaxPurchaseAmount = await encryptFn(
     parseUnits(maxPurchaseAmount.toString(), 6),
+    Contracts.hooks.purchaseAmountHook.address,
     Contracts.koraExecutor.address,
   );
   if (!encMaxPurchaseAmount?.handles[0])
@@ -63,6 +65,7 @@ export const buildStrategyHooks = async ({
   const timeFrameInSeconds = Math.floor(validUntil.getTime() / 1000);
   const encValidUntil = await encryptFn(
     BigInt(timeFrameInSeconds),
+    Contracts.hooks.timeframeHook.address,
     Contracts.koraExecutor.address,
   );
   if (!encValidUntil?.handles[0])
@@ -74,6 +77,7 @@ export const buildStrategyHooks = async ({
   );
   const encFrequency = await encryptFn(
     BigInt(frequencyInSeconds),
+    Contracts.hooks.frequencyHook.address,
     Contracts.koraExecutor.address,
   );
   if (!encFrequency?.handles[0]) throw new Error("Failed to encrypt frequency");
