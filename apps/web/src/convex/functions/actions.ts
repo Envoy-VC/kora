@@ -8,8 +8,9 @@ export const executeBatch = action({
     const strategies = await ctx.runQuery(
       internal.functions.strategy.getStrategiesToExecute,
     );
-    const hash = await executeStrategies(strategies);
 
+    if (strategies.length === 0) return "No strategies to execute";
+    const hash = await executeStrategies(strategies);
     const strategyIds = strategies.map((s) => s._id);
     await ctx.runMutation(
       internal.functions.strategy.updateExecutedStrategies,
