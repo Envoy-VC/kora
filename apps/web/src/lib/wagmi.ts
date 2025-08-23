@@ -1,3 +1,5 @@
+import type { Hex } from "viem";
+import { waitForTransactionReceipt as waitForTransactionReceiptCore } from "viem/actions";
 import { createConfig, http, injected } from "wagmi";
 import { sepolia } from "wagmi/chains";
 
@@ -14,3 +16,7 @@ export const wagmiConfig = createConfig({
     [sepolia.id]: http(),
   },
 });
+
+export const waitForTransactionReceipt = async (hash: Hex) => {
+  await waitForTransactionReceiptCore(wagmiConfig.getClient(), { hash });
+};

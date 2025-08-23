@@ -9,48 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./app/__root";
-import { Route as DashboardCreateStrategyRouteImport } from "./app/dashboard/create-strategy";
-import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
-import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
-import { Route as DashboardSettingsRouteImport } from "./app/dashboard/settings";
-import { Route as DashboardWrapRouteImport } from "./app/dashboard/wrap";
 import { Route as IndexRouteImport } from "./app/index";
+import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
+import { Route as DashboardWrapRouteImport } from "./app/dashboard/wrap";
+import { Route as DashboardSettingsRouteImport } from "./app/dashboard/settings";
+import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
+import { Route as DashboardCreateStrategyRouteImport } from "./app/dashboard/create-strategy";
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: "/dashboard",
   path: "/dashboard",
+  getParentRoute: () => rootRouteImport,
 } as any);
 const IndexRoute = IndexRouteImport.update({
-  getParentRoute: () => rootRouteImport,
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
 } as any);
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  getParentRoute: () => DashboardRouteRoute,
   id: "/",
   path: "/",
+  getParentRoute: () => DashboardRouteRoute,
 } as any);
 const DashboardWrapRoute = DashboardWrapRouteImport.update({
-  getParentRoute: () => DashboardRouteRoute,
   id: "/wrap",
   path: "/wrap",
+  getParentRoute: () => DashboardRouteRoute,
 } as any);
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  getParentRoute: () => DashboardRouteRoute,
   id: "/settings",
   path: "/settings",
+  getParentRoute: () => DashboardRouteRoute,
 } as any);
 const DashboardMintRoute = DashboardMintRouteImport.update({
-  getParentRoute: () => DashboardRouteRoute,
   id: "/mint",
   path: "/mint",
+  getParentRoute: () => DashboardRouteRoute,
 } as any);
 const DashboardCreateStrategyRoute = DashboardCreateStrategyRouteImport.update({
-  getParentRoute: () => DashboardRouteRoute,
   id: "/create-strategy",
   path: "/create-strategy",
+  getParentRoute: () => DashboardRouteRoute,
 } as any);
 
 export interface FileRoutesByFullPath {
@@ -178,10 +178,10 @@ interface DashboardRouteRouteChildren {
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCreateStrategyRoute: DashboardCreateStrategyRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
   DashboardMintRoute: DashboardMintRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardWrapRoute: DashboardWrapRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 };
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
@@ -189,8 +189,8 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 );
 
 const rootRouteChildren: RootRouteChildren = {
-  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   IndexRoute: IndexRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

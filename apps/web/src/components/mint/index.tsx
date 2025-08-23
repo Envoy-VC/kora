@@ -2,8 +2,9 @@ import { useState } from "react";
 
 import { Input } from "@kora/ui/components/input";
 import { parseEther } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract } from "wagmi";
 
+import { Contracts } from "@/data/contracts";
 import { sleep } from "@/lib/helpers";
 import { parseErrorMessage } from "@/lib/helpers/error";
 
@@ -11,9 +12,12 @@ import {
   ThreeStepButton,
   type ThreeStepButtonCallback,
 } from "../three-step-button";
+import { waitForTransactionReceipt } from "@/lib/wagmi";
+import { toast } from "sonner";
 
 export const Mint = () => {
   const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
 
   const [amount, setAmount] = useState<number | undefined>(undefined);
   const [token, setToken] = useState<"weth" | "usdc">("weth");
@@ -28,15 +32,22 @@ export const Mint = () => {
       if (value === 0n) {
         throw new Error("Amount must be greater than 0");
       }
-      await sleep("2s");
+      const tokenToMint = token === "usdc" ? Contracts.usdc : Contracts.weth;
+      const hash = await writeContractAsync({
+        ...tokenToMint,
+        functionName: 'mint',
+        args: [address, value],
+      })
+      await waitForTransactionReceipt(hash)
       setAmount(undefined);
       setState("success");
+      toast.success("Tokens Minted Successfully");
       await sleep("2s");
       setState("idle");
     } catch (error: unknown) {
       const message = parseErrorMessage(error);
       console.error(error);
-      alert(message); // TODO: replace with toast
+      toast.error(message);
       setState("error");
       await sleep("2s");
       setState("idle");
