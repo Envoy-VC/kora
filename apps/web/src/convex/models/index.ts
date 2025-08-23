@@ -13,6 +13,7 @@ export const strategySchema = {
     frequency: v.object({
       duration: v.number(),
       unit: v.union(
+        v.literal("hours"),
         v.literal("days"),
         v.literal("weeks"),
         v.literal("months"),

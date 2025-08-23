@@ -1,14 +1,43 @@
 import { v } from "convex/values";
 
 import { mutation, type QueryCtx, query } from "../_generated/server";
-import { strategySchema } from "../models";
 import type { Nullable, User } from "../types";
-import { getUserByAddress } from "./user";
+import { getOrCreateUser, getUserByAddress } from "./user";
 
 export const createStrategy = mutation({
-  args: strategySchema,
+  args: {
+    amount: v.object({
+      handle: v.string(),
+      inputProof: v.string(),
+    }),
+    hooks: v.object({
+      frequency: v.object({
+        duration: v.number(),
+        unit: v.union(
+          v.literal("hours"),
+          v.literal("days"),
+          v.literal("weeks"),
+          v.literal("months"),
+          v.literal("years"),
+        ),
+      }),
+      maxBudget: v.number(),
+      maxPurchaseAmount: v.number(),
+      validUntil: v.string(),
+    }),
+    nextRunAt: v.string(),
+    salt: v.string(),
+    strategyId: v.string(),
+    userAddress: v.string(),
+  },
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("strategies", args);
+    const { userAddress, ...rest } = args;
+    const user = await getOrCreateUser(ctx, userAddress);
+    const id = await ctx.db.insert("strategies", {
+      ...rest,
+      isCompleted: false,
+      user: user._id,
+    });
     const strategy = await ctx.db.get(id);
     if (!strategy) throw new Error("Failed to create strategy");
     return strategy;

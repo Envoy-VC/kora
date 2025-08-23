@@ -1,3 +1,7 @@
+import { randomBytes } from "crypto";
+
+import { useState } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@kora/ui/components/button";
 import { Calendar } from "@kora/ui/components/calendar";
@@ -23,17 +27,30 @@ import {
   SelectValue,
 } from "@kora/ui/components/select";
 import { cn } from "@kora/ui/lib/utils";
+import { readContract } from "@wagmi/core";
+import { useMutation } from "convex/react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useAccount } from "wagmi";
+import { toast } from "sonner";
+import { parseUnits, toHex } from "viem";
+import { useAccount, useWriteContract } from "wagmi";
 import { z } from "zod/v4";
+
+import { api } from "@/convex/_generated/api";
+import { Contracts } from "@/data/contracts";
+import { useFhevm } from "@/hooks";
+import { sleep } from "@/lib/helpers";
+import { parseErrorMessage } from "@/lib/helpers/error";
+import { buildStrategyHooks } from "@/lib/helpers/strategy";
+import { wagmiConfig, waitForTransactionReceipt } from "@/lib/wagmi";
 
 const formSchema = z
   .object({
     frequency: z.object({
       duration: z.number({ message: "Frequency Duration is required" }).min(0),
       unit: z.union([
+        z.literal("hours"),
         z.literal("days"),
         z.literal("weeks"),
         z.literal("months"),
@@ -59,6 +76,9 @@ export type FormResponse = z.infer<typeof formSchema>;
 
 export const CreateStrategyForm = () => {
   const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const { createEncryptedUint64 } = useFhevm();
+  const createStrategy = useMutation(api.functions.strategy.createStrategy);
 
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: {
@@ -70,8 +90,89 @@ export const CreateStrategyForm = () => {
     resolver: zodResolver(formSchema),
   });
 
-  const onSubmit = (values: FormResponse) => {
-    console.log(values);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const onSubmit = async (values: FormResponse) => {
+    const id = toast.loading("Creating Strategy...");
+    try {
+      setIsSubmitting(true);
+      if (!address) throw new Error("Connect your wallet");
+      console.log(values);
+      await sleep("1s");
+      toast.loading(`Approving Kora Executor...`, { id });
+      // 1. Approve Max Tokens
+      const toApprove = 2n ** 64n - 1n;
+      const encApproveAmount = await createEncryptedUint64(
+        toApprove,
+        Contracts.eWETH.address,
+      );
+      if (!encApproveAmount?.handles[0])
+        throw new Error("Failed to create encrypted amount");
+      const approveHash = await writeContractAsync({
+        ...Contracts.eWETH,
+        args: [
+          Contracts.koraExecutor.address,
+          toHex(encApproveAmount.handles[0]),
+          toHex(encApproveAmount?.inputProof),
+        ],
+        functionName: "approve",
+      });
+      await waitForTransactionReceipt(approveHash);
+      const encAmount = await createEncryptedUint64(
+        parseUnits(values.maxPurchaseAmount.toString(), 6),
+        Contracts.koraExecutor.address,
+      );
+      if (!encAmount?.handles[0])
+        throw new Error("Failed to create encrypted amount");
+      // 3. Build Strategy Hooks
+      toast.loading("Building Strategy Hooks...");
+      const hooks = await buildStrategyHooks({
+        encryptFn: createEncryptedUint64,
+        frequency: values.frequency,
+        maxBudget: values.maxBudget,
+        maxPurchaseAmount: values.maxPurchaseAmount,
+        userAddress: address,
+        validUntil: values.validUntil,
+      });
+      toast.loading("Creating Strategy...");
+      const salt = toHex(randomBytes(32));
+      const strategyId = await readContract(wagmiConfig, {
+        ...Contracts.koraExecutor,
+        args: [address, salt],
+        functionName: "computeStrategyId",
+      });
+
+      const createHash = await writeContractAsync({
+        ...Contracts.koraExecutor,
+        args: [address, hooks, salt],
+        functionName: "createStrategy",
+      });
+      await waitForTransactionReceipt(createHash);
+      // Write to DB
+      await createStrategy({
+        amount: {
+          handle: toHex(encAmount.handles[0]),
+          inputProof: toHex(encAmount.inputProof),
+        },
+        hooks: {
+          frequency: values.frequency,
+          maxBudget: values.maxBudget,
+          maxPurchaseAmount: values.maxPurchaseAmount,
+          validUntil: values.validUntil.toUTCString(),
+        },
+        nextRunAt: new Date().toUTCString(),
+        salt,
+        strategyId,
+        userAddress: address,
+      });
+      toast.success("Strategy created successfully");
+    } catch (error) {
+      console.log(error);
+      const message = parseErrorMessage(error);
+      toast.error(message, { id });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,7 +186,11 @@ export const CreateStrategyForm = () => {
               <FormItem>
                 <FormLabel className="text-neutral-300">User Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="0x..." {...field} />
+                  <Input
+                    placeholder="0x..."
+                    {...field}
+                    disabled={isSubmitting}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -103,6 +208,7 @@ export const CreateStrategyForm = () => {
                       className="!rounded-xl w-full"
                       placeholder="0.00"
                       {...field}
+                      disabled={isSubmitting}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -123,6 +229,7 @@ export const CreateStrategyForm = () => {
                       placeholder="0.00"
                       {...field}
                       className="!rounded-xl w-full"
+                      disabled={isSubmitting}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -146,6 +253,7 @@ export const CreateStrategyForm = () => {
                           placeholder="1"
                           type="number"
                           {...field}
+                          disabled={isSubmitting}
                           onChange={(e) =>
                             field.onChange(Number(e.target.value))
                           }
@@ -165,7 +273,10 @@ export const CreateStrategyForm = () => {
                         onValueChange={field.onChange}
                       >
                         <FormControl>
-                          <SelectTrigger className="rounded-xl">
+                          <SelectTrigger
+                            className="rounded-xl"
+                            disabled={isSubmitting}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -190,13 +301,14 @@ export const CreateStrategyForm = () => {
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col">
                     <Popover>
-                      <PopoverTrigger asChild={true}>
+                      <PopoverTrigger asChild={true} disabled={isSubmitting}>
                         <FormControl>
                           <Button
                             className={cn(
                               "!w-full border border-neutral-800 bg-transparent pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground",
                             )}
+                            disabled={isSubmitting}
                             innerCls="flex flex-row items-center gap-2 w-full"
                             variant="secondary"
                           >
@@ -227,9 +339,9 @@ export const CreateStrategyForm = () => {
               />
             </div>
           </div>
-
           <Button
             className="!font-medium !text-base mt-5 flex w-full flex-row items-center justify-center gap-2 rounded-xl"
+            disabled={isSubmitting}
             type="submit"
             variant="default"
           >
