@@ -1,4 +1,5 @@
 import { FhevmType } from "@fhevm/hardhat-plugin";
+// biome-ignore lint/correctness/noUndeclaredDependencies: safe
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ethers, fhevm } from "hardhat";
 

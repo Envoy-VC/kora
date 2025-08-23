@@ -51,17 +51,13 @@ export const deployMockUniswapV2 = async (
   const pairAddress = await factory.getPair(token0Address, token1Address);
   const pair = await ethers.getContractAt("UniswapV2Pair", pairAddress);
 
-  const pairArtifact = await ethers.getContractFactory("UniswapV2Pair");
-  const initCodeHash = ethers.keccak256(pairArtifact.bytecode);
-  console.log("INIT_CODE_PAIR_HASH:", initCodeHash);
-
   tx = await router
     .connect(deployer)
     .addLiquidity(
-      token1Address,
       token0Address,
-      amount1,
+      token1Address,
       amount0,
+      amount1,
       0,
       0,
       deployer.address,

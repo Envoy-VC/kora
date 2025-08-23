@@ -1,19 +1,21 @@
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
 import "@fhevm/hardhat-plugin";
 
-import { type HardhatUserConfig, vars } from "hardhat/config";
+import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-ignition-ethers";
 
-const MNEMONIC: string = vars.get(
-  "MNEMONIC",
-  "test test test test test test test test test test test junk",
-);
+const MNEMONIC: string =
+  process.env.MNEMONIC ??
+  "test test test test test test test test test test test junk";
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   etherscan: {
     apiKey: {
-      sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+      sepolia: process.env.ETHERSCAN_API_KEY ?? "",
     },
   },
   gasReporter: {
@@ -40,13 +42,9 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     sepolia: {
-      accounts: {
-        count: 10,
-        mnemonic: MNEMONIC,
-        path: "m/44'/60'/0'/0/",
-      },
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY ?? ""],
       chainId: 11155111,
-      url: vars.get("SEPOLIA_RPC_URL", ""),
+      url: process.env.SEPOLIA_RPC_URL ?? "",
     },
   },
   paths: {
