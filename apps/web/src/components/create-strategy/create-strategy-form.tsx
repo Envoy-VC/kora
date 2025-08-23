@@ -152,8 +152,10 @@ export const CreateStrategyForm = () => {
         },
         hooks: {
           frequency: values.frequency,
-          maxBudget: values.maxBudget,
-          maxPurchaseAmount: values.maxPurchaseAmount,
+          maxBudget: Number(parseUnits(values.maxBudget.toString(), 6)),
+          maxPurchaseAmount: Number(
+            parseUnits(values.maxPurchaseAmount.toString(), 6),
+          ),
           validUntil: values.validUntil.toUTCString(),
         },
         nextRunAt: new Date().toUTCString(),

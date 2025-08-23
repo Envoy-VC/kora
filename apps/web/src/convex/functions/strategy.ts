@@ -84,7 +84,7 @@ export const getStrategiesForUser = query({
       user = await getUserByAddress(ctx, args.userAddress);
     }
 
-    if (!user) throw new Error("User not found");
+    if (!user) return [];
 
     const strategies = await ctx.db
       .query("strategies")

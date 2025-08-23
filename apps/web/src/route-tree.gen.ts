@@ -14,6 +14,7 @@ import { Route as DashboardIndexRouteImport } from "./app/dashboard/index";
 import { Route as DashboardMintRouteImport } from "./app/dashboard/mint";
 import { Route as DashboardRouteRouteImport } from "./app/dashboard/route";
 import { Route as DashboardSettingsRouteImport } from "./app/dashboard/settings";
+import { Route as DashboardStrategiesRouteImport } from "./app/dashboard/strategies";
 import { Route as DashboardWrapRouteImport } from "./app/dashboard/wrap";
 import { Route as IndexRouteImport } from "./app/index";
 
@@ -37,6 +38,11 @@ const DashboardWrapRoute = DashboardWrapRouteImport.update({
   id: "/wrap",
   path: "/wrap",
 } as any);
+const DashboardStrategiesRoute = DashboardStrategiesRouteImport.update({
+  getParentRoute: () => DashboardRouteRoute,
+  id: "/strategies",
+  path: "/strategies",
+} as any);
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   getParentRoute: () => DashboardRouteRoute,
   id: "/settings",
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
+  "/dashboard/strategies": typeof DashboardStrategiesRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
+  "/dashboard/strategies": typeof DashboardStrategiesRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard": typeof DashboardIndexRoute;
 }
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   "/dashboard/create-strategy": typeof DashboardCreateStrategyRoute;
   "/dashboard/mint": typeof DashboardMintRoute;
   "/dashboard/settings": typeof DashboardSettingsRoute;
+  "/dashboard/strategies": typeof DashboardStrategiesRoute;
   "/dashboard/wrap": typeof DashboardWrapRoute;
   "/dashboard/": typeof DashboardIndexRoute;
 }
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
+    | "/dashboard/strategies"
     | "/dashboard/wrap"
     | "/dashboard/";
   fileRoutesByTo: FileRoutesByTo;
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
+    | "/dashboard/strategies"
     | "/dashboard/wrap"
     | "/dashboard";
   id:
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | "/dashboard/create-strategy"
     | "/dashboard/mint"
     | "/dashboard/settings"
+    | "/dashboard/strategies"
     | "/dashboard/wrap"
     | "/dashboard/";
   fileRoutesById: FileRoutesById;
@@ -144,6 +156,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardWrapRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
+    "/dashboard/strategies": {
+      id: "/dashboard/strategies";
+      path: "/strategies";
+      fullPath: "/dashboard/strategies";
+      preLoaderRoute: typeof DashboardStrategiesRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
     "/dashboard/settings": {
       id: "/dashboard/settings";
       path: "/settings";
@@ -172,6 +191,7 @@ interface DashboardRouteRouteChildren {
   DashboardCreateStrategyRoute: typeof DashboardCreateStrategyRoute;
   DashboardMintRoute: typeof DashboardMintRoute;
   DashboardSettingsRoute: typeof DashboardSettingsRoute;
+  DashboardStrategiesRoute: typeof DashboardStrategiesRoute;
   DashboardWrapRoute: typeof DashboardWrapRoute;
   DashboardIndexRoute: typeof DashboardIndexRoute;
 }
@@ -181,6 +201,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardMintRoute: DashboardMintRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardStrategiesRoute: DashboardStrategiesRoute,
   DashboardWrapRoute: DashboardWrapRoute,
 };
 

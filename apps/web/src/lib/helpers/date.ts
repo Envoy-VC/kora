@@ -40,3 +40,32 @@ export const parseFrequencyDuration = (
     return duration * ONE_YEAR_IN_SECONDS;
   }
 };
+
+export const prettyTimeRemaining = (target: Date): string => {
+  const now = new Date();
+  let diff = target.getTime() - now.getTime();
+
+  if (diff <= 0) return "in a few seconds";
+
+  const units = [
+    { label: "year", ms: 1000 * 60 * 60 * 24 * 365 },
+    { label: "month", ms: 1000 * 60 * 60 * 24 * 30 },
+    { label: "day", ms: 1000 * 60 * 60 * 24 },
+    { label: "hour", ms: 1000 * 60 * 60 },
+    { label: "minute", ms: 1000 * 60 },
+    { label: "second", ms: 1000 },
+  ];
+
+  const parts: string[] = [];
+
+  for (const { label, ms } of units) {
+    if (diff >= ms) {
+      const value = Math.floor(diff / ms);
+      diff -= value * ms;
+      parts.push(`${value} ${label}${value > 1 ? "s" : ""}`);
+    }
+    if (parts.length === 2) break; // max 2 units
+  }
+
+  return `in about ${parts.join(" ")}`;
+};
