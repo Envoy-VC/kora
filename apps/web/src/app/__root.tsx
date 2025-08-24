@@ -26,7 +26,7 @@ export const Route = createRootRoute({
   component: RootComponent,
   head: () => {
     return {
-      links: [],
+      links: [{ href: "/icon.png", rel: "icon" }],
       meta: [
         {
           content: "My App is a web application",

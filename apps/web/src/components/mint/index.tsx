@@ -46,7 +46,6 @@ export const Mint = () => {
       setState("idle");
     } catch (error: unknown) {
       const message = parseErrorMessage(error);
-      console.error(error);
       toast.error(message);
       setState("error");
       await sleep("2s");
