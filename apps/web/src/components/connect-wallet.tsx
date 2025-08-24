@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { Button } from "@kora/ui/components/button";
 import { Dialog, DialogContent } from "@kora/ui/components/dialog";
 import { useMutation } from "convex/react";
-import { LockKeyholeIcon } from "lucide-react";
+
+const LockKeyholeIcon = lazy(() =>
+  import("lucide-react").then((m) => ({ default: m.LockKeyhole })),
+);
+
 import { toast } from "sonner";
 import { useAccount, useConnect } from "wagmi";
 
@@ -49,7 +53,9 @@ export const ConnectWallet = () => {
         showCloseButton={false}
       >
         <div className="mx-auto flex size-16 items-center justify-center rounded-full border">
-          <LockKeyholeIcon className="text-primary" size={32} />
+          <Suspense fallback={null}>
+            <LockKeyholeIcon className="text-primary" size={32} />
+          </Suspense>
         </div>
         <div className="text-center text-neutral-200 text-xl">
           Connection Required
