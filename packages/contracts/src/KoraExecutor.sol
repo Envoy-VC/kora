@@ -46,7 +46,9 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
     //                          Events
     // -----------------------------------------------------------
 
-    event HookFailed(bytes32 intentId, bytes32 indexed strategyId, address indexed hook, bytes revertData);
+    event PreHookFailed(bytes32 intentId, bytes32 indexed strategyId, address indexed hook, bytes revertData);
+    event PostHookFailed(bytes32 intentId, bytes32 indexed strategyId, address indexed hook, bytes revertData);
+
     event IntentAccepted(bytes32 intentId, bytes32 indexed strategyId, address indexed user);
     event IntentRejected(bytes32 intentId, bytes32 indexed strategyId, address indexed user, bytes revertData);
     event BatchRequested(uint256 indexed requestId);
@@ -103,7 +105,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         // Initialize Total Token Input
         euint64 totalIn = FHE.asEuint64(0);
 
-        // 1. Validate via hooks
+        // 1. Validation Stage
         for (uint256 i; i < len;) {
             IntentLib.IntentExternal calldata intent = intents[i];
 
@@ -115,7 +117,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             if (strategy.user == address(0)) {
                 bytes memory reason = abi.encodePacked("KoraExecutor: Strategy not found");
                 results[i] = IntentResult(
-                    intent.intentId, strategy.user, intent.strategyId, intentAmount, FHE.asEbool(false), false, reason
+                    intent.intentId, strategy.user, intent.strategyId, intentAmount, FHE.asEbool(false), reason
                 );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, reason);
                 unchecked {
@@ -124,22 +126,19 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
-            // 1.2 Run Isolated Hooks and get ebool results
+            // 1.2 Run Pre-Hooks and get ebool results
             address[] memory hooks = strategy.hooks;
             ebool preHookCheck = _runPreHooks(
                 hooks,
                 IntentLib.Intent({amount0: intentAmount, intentId: intent.intentId, strategyId: intent.strategyId})
             );
 
-            // 1.3 Check for Allowance
-            ebool hasPassedChecks = preHookCheck;
-
-            // 1.3 Pull in EncryptedERC20 tokens from Strategy User to this contract
-            (bool pullSuccess, bytes memory pullResult) = _pullIn(strategy.user, intentAmount);
-
+            // 1.3 Compute and Pull in EncryptedERC20 tokens from Strategy User to this contract
+            euint64 amountToPull = FHE.select(preHookCheck, intentAmount, FHE.asEuint64(0));
+            (bool pullSuccess, bytes memory pullResult) = _pullIn(strategy.user, amountToPull);
             if (!pullSuccess) {
                 results[i] = IntentResult(
-                    intent.intentId, strategy.user, intent.strategyId, intentAmount, hasPassedChecks, false, pullResult
+                    intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, pullResult
                 );
                 emit IntentRejected(intent.intentId, intent.strategyId, strategy.user, pullResult);
                 unchecked {
@@ -148,13 +147,12 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
-            // 1.3 Mark Success and Add to Total Token Input
-            results[i] = IntentResult(
-                intent.intentId, strategy.user, intent.strategyId, intentAmount, hasPassedChecks, true, bytes("")
-            );
+            // 1.4 Mark Success and Add to Total Token Input
+            results[i] =
+                IntentResult(intent.intentId, strategy.user, intent.strategyId, intentAmount, preHookCheck, bytes(""));
 
-            // 1.4 Add only if hasPassedChecks is successful
-            euint64 toAdd = FHE.select(hasPassedChecks, intentAmount, FHE.asEuint64(0));
+            // 1.5 Add only if preHookCheck is successful
+            euint64 toAdd = FHE.select(preHookCheck, intentAmount, FHE.asEuint64(0));
             euint64 runningTotal = FHE.add(totalIn, toAdd);
             totalIn = runningTotal;
 
@@ -165,18 +163,19 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             }
         }
 
+        // 2. Pack Pre-Hook Checks into a euint64 to get only 2 variables to decrypt by oracle.
         ebool[] memory checks = new ebool[](len);
         for (uint256 i; i < len;) {
-            checks[i] = results[i].hasPassedChecks;
+            checks[i] = results[i].preHookCheck;
             unchecked {
                 ++i;
             }
         }
         euint64 packedChecks = PackedBool.packEboolArray(checks);
 
-        // 2. Request Decryption of Total Amount from Decryption Oracle
+        // 3. Request Decryption of Total Amount from Decryption Oracle
         // - 1. TotalIn Amount
-        // - 2. Packed Bool Array of hasPassedChecks
+        // - 2. Packed Bool Array of preHookCheck
         bytes32[] memory cts = new bytes32[](2);
         cts[0] = FHE.toBytes32(totalIn);
         cts[1] = FHE.toBytes32(packedChecks);
@@ -187,6 +186,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         _batches[latestRequestId].totalIn = totalIn;
         _batches[latestRequestId].isPending = true;
 
+        // 4. Allow this contract to access the amounts in callback function
         for (uint256 i; i < len;) {
             _batches[latestRequestId].results[i] = results[i];
             FHE.allowThis(results[i].amount0);
@@ -212,41 +212,27 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         if (!batch.isPending) {
             revert BatchAlreadyCompleted();
         }
-        // 3. Check if the batch exists
-        if (batch.totalResults == 0) {
-            revert NonExistentBatch();
-        }
+        // 3. Return Early if the batch is empty
+        if (batch.totalResults == 0) return;
 
-        // 4. Return cases where pull was true but preCheck was false
-        for (uint256 i; i < batch.totalResults;) {
-            bool hasPassedChecks = preHookChecks[i];
-            bool hasPulledIn = batch.results[i].hasPulledIn;
-            if (!hasPassedChecks && hasPulledIn) {
-                FHE.allowTransient(batch.results[i].amount0, address(token0));
-                token0.transfer(batch.results[i].user, batch.results[i].amount0);
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
+        // 4. Return if total amount is 0
         if (totalIn == 0) return;
 
         // 5. Withdraw totalIn Token0 for swapping
         token0.withdraw(totalIn);
 
-        // 5. Execute Swap to get Underlying Token1
+        // 6. Execute Swap to get Underlying Token1
         uint256 amountOut = _executeSwap(totalIn);
 
-        // 6. Convert Underlying Token1 Amount to Encrypted Token1
+        // 7. Convert Underlying Token1 Amount to Encrypted Token1
         token1._underlyingToken().approve(address(token1), amountOut);
         token1.deposit(uint64(amountOut));
 
         uint256 len = batch.totalResults;
 
-        // 7. Distribute Tokens proportionally to Users as per their Intent Amounts
+        // 8. Distribute Tokens proportionally to Users as per their Intent Amounts
         for (uint256 i; i < len;) {
-            // 7.1 Check if Intent has passed Checks
+            // 8.1 Check if Intent has passed Checks
             if (!preHookChecks[i]) {
                 unchecked {
                     ++i;
@@ -254,20 +240,20 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 continue;
             }
 
-            // 7.3 If Intent Amount is Zero, skip
+            // 8.3 If Intent Amount is Zero, skip
             euint64 intentAmountIn = batch.results[i].amount0;
 
-            // 7.4 Calculate Ratio of Intent Amount to Total Token Input
+            // 8.4 Calculate Ratio of Intent Amount to Total Token Input
             euint64 encAmountOut = FHE.asEuint64(uint64(amountOut));
             euint64 ratio = FHE.div(intentAmountIn, totalIn);
             euint64 intentAmountOut = FHE.mul(ratio, encAmountOut);
 
-            // Transfer Encrypted Tokens to User
+            // 8.5 Transfer Encrypted Tokens to User
             address user = _strategies[batch.results[i].strategyId].user;
             FHE.allowTransient(intentAmountOut, address(token1));
             token1.transfer(user, intentAmountOut);
 
-            // Execute Post-Swap Hooks
+            // 8.6 Execute Post-Swap Hooks
             address[] memory hooks = _strategies[batch.results[i].strategyId].hooks;
             _executePostHooks(hooks, batch.results[i]);
             unchecked {
@@ -275,6 +261,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             }
         }
 
+        // 9. Mark Batch as Completed
         batch.isPending = false;
         emit BatchExecuted(requestId);
     }
@@ -339,7 +326,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 hook.call(abi.encodeWithSelector(ISwapHook.preSwap.selector, intent.strategyId, encodedIntent));
 
             if (!ok) {
-                emit HookFailed(intent.intentId, intent.strategyId, hook, result);
+                emit PreHookFailed(intent.intentId, intent.strategyId, hook, result);
                 return FHE.asEbool(false);
             }
 
@@ -367,7 +354,7 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
                 hook.call(abi.encodeWithSelector(ISwapHook.postSwap.selector, result.strategyId, result));
 
             if (!ok) {
-                emit HookFailed(result.intentId, result.strategyId, hook, res);
+                emit PostHookFailed(result.intentId, result.strategyId, hook, res);
             }
 
             unchecked {

@@ -24,10 +24,8 @@ struct IntentResult {
     bytes32 strategyId;
     /// @dev The amount of token0 specified in the Intent
     euint64 amount0;
-    /// @dev Whether the pre-hook check and allowances checks was successful
-    ebool hasPassedChecks;
-    /// @dev Whether the Intent Amount was successfully pulled in
-    bool hasPulledIn;
+    /// @dev Whether the pre-hook checks was successful
+    ebool preHookCheck;
     /// @dev Revert data if the execution failed
     bytes revertData;
 }
