@@ -22,7 +22,7 @@ contract FrequencyHook is ISwapHook, SepoliaConfig {
     KoraExecutor public immutable executor;
 
     constructor(address _executor) {
-        executor = KoraExecutor(_executor);
+        executor = KoraExecutor(payable(_executor));
     }
 
     function initialize(bytes32 strategyId, bytes memory data) external {

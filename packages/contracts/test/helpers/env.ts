@@ -44,6 +44,7 @@ export const createEnvironment = async () => {
     await eWETH.getAddress(),
     await eUSDC.getAddress(),
     await router.getAddress(),
+    deployerAddress,
   );
   await koraExecutor.waitForDeployment();
 
