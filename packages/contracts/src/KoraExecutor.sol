@@ -16,6 +16,7 @@ import "./interfaces/ISwapHook.sol";
 
 // Libraries
 import "./libraries/IntentLib.sol";
+import "./libraries/PackedBool.sol";
 
 contract KoraExecutor is IKoraExecutor, SepoliaConfig {
     using IntentLib for IntentLib.Intent;
@@ -164,16 +165,23 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
             }
         }
 
-        // 2. Request Decryption of Total Amount from Decryption Oracle
-        bytes32[] memory cts = new bytes32[](1 + len);
-        cts[0] = FHE.toBytes32(totalIn);
+        ebool[] memory checks = new ebool[](len);
         for (uint256 i; i < len;) {
-            cts[i + 1] = FHE.toBytes32(results[i].hasPassedChecks);
+            checks[i] = results[i].hasPassedChecks;
             unchecked {
                 ++i;
             }
         }
-        uint256 latestRequestId = _requestDecryption(cts);
+        euint64 packedChecks = PackedBool.packEboolArray(checks);
+
+        // 2. Request Decryption of Total Amount from Decryption Oracle
+        // - 1. TotalIn Amount
+        // - 2. Packed Bool Array of hasPassedChecks
+        bytes32[] memory cts = new bytes32[](2);
+        cts[0] = FHE.toBytes32(totalIn);
+        cts[1] = FHE.toBytes32(packedChecks);
+
+        uint256 latestRequestId = FHE.requestDecryption(cts, this.decryptionCallback.selector);
 
         _batches[latestRequestId].totalResults = len;
         _batches[latestRequestId].totalIn = totalIn;
@@ -190,112 +198,12 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
         emit BatchRequested(latestRequestId);
     }
 
-    function decryptionCallback1(uint256 requestId, uint64 totalIn, bool preHookCheck1, bytes[] memory signatures)
+    function decryptionCallback(uint256 requestId, uint64 totalIn, uint64 packedChecks, bytes[] memory signatures)
         public
     {
-        bool[] memory preHookChecks = new bool[](1);
-        preHookChecks[0] = preHookCheck1;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function decryptionCallback2(
-        uint256 requestId,
-        uint64 totalIn,
-        bool preHookCheck1,
-        bool preHookCheck2,
-        bytes[] memory signatures
-    ) public {
-        bool[] memory preHookChecks = new bool[](2);
-        preHookChecks[0] = preHookCheck1;
-        preHookChecks[1] = preHookCheck2;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function decryptionCallback3(
-        uint256 requestId,
-        uint64 totalIn,
-        bool preHookCheck1,
-        bool preHookCheck2,
-        bool preHookCheck3,
-        bytes[] memory signatures
-    ) public {
-        bool[] memory preHookChecks = new bool[](3);
-        preHookChecks[0] = preHookCheck1;
-        preHookChecks[1] = preHookCheck2;
-        preHookChecks[2] = preHookCheck3;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function decryptionCallback4(
-        uint256 requestId,
-        uint64 totalIn,
-        bool preHookCheck1,
-        bool preHookCheck2,
-        bool preHookCheck3,
-        bool preHookCheck4,
-        bytes[] memory signatures
-    ) public {
-        bool[] memory preHookChecks = new bool[](4);
-        preHookChecks[0] = preHookCheck1;
-        preHookChecks[1] = preHookCheck2;
-        preHookChecks[2] = preHookCheck3;
-        preHookChecks[3] = preHookCheck4;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function decryptionCallback5(
-        uint256 requestId,
-        uint64 totalIn,
-        bool preHookCheck1,
-        bool preHookCheck2,
-        bool preHookCheck3,
-        bool preHookCheck4,
-        bool preHookCheck5,
-        bytes[] memory signatures
-    ) public {
-        bool[] memory preHookChecks = new bool[](5);
-        preHookChecks[0] = preHookCheck1;
-        preHookChecks[1] = preHookCheck2;
-        preHookChecks[2] = preHookCheck3;
-        preHookChecks[3] = preHookCheck4;
-        preHookChecks[4] = preHookCheck5;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function decryptionCallback6(
-        uint256 requestId,
-        uint64 totalIn,
-        bool preHookCheck1,
-        bool preHookCheck2,
-        bool preHookCheck3,
-        bool preHookCheck4,
-        bool preHookCheck5,
-        bool preHookCheck6,
-        bytes[] memory signatures
-    ) public {
-        bool[] memory preHookChecks = new bool[](6);
-        preHookChecks[0] = preHookCheck1;
-        preHookChecks[1] = preHookCheck2;
-        preHookChecks[2] = preHookCheck3;
-        preHookChecks[3] = preHookCheck4;
-        preHookChecks[4] = preHookCheck5;
-        preHookChecks[5] = preHookCheck6;
-
-        _decryptionCallback(requestId, totalIn, preHookChecks, signatures);
-    }
-
-    function _decryptionCallback(
-        uint256 requestId,
-        uint64 totalIn,
-        bool[] memory preHookChecks,
-        bytes[] memory signatures
-    ) internal {
         Batch storage batch = _batches[requestId];
+
+        bool[] memory preHookChecks = PackedBool.unpackBools(packedChecks, batch.totalResults);
 
         // 1. Check for Valid Signatures
         FHE.checkSignatures(requestId, signatures);
@@ -378,25 +286,6 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig {
     // -----------------------------------------------------------
     //                  Internal/Private Functions
     // -----------------------------------------------------------
-
-    function _requestDecryption(bytes32[] memory cts) internal returns (uint256) {
-        uint256 batchSize = cts.length - 1;
-        if (batchSize == 1) {
-            return FHE.requestDecryption(cts, this.decryptionCallback1.selector);
-        } else if (batchSize == 2) {
-            return FHE.requestDecryption(cts, this.decryptionCallback2.selector);
-        } else if (batchSize == 3) {
-            return FHE.requestDecryption(cts, this.decryptionCallback3.selector);
-        } else if (batchSize == 4) {
-            return FHE.requestDecryption(cts, this.decryptionCallback4.selector);
-        } else if (batchSize == 5) {
-            return FHE.requestDecryption(cts, this.decryptionCallback5.selector);
-        } else if (batchSize == 6) {
-            return FHE.requestDecryption(cts, this.decryptionCallback6.selector);
-        }
-
-        revert("KoraExecutor: Invalid Decryption Oracle Request");
-    }
 
     function _executeSwap(uint256 totalIn) internal returns (uint256) {
         address[] memory path = new address[](2);

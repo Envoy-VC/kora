@@ -97,23 +97,23 @@ export const CreateStrategyForm = () => {
       await sleep("1s");
       toast.loading(`Approving Kora Executor...`, { id });
       // 1. Approve Max Tokens
-      // const toApprove = 2n ** 64n - 1n;
-      // const encApproveAmount = await createEncryptedUint64(
-      //   toApprove,
-      //   Contracts.eWETH.address,
-      // );
-      // if (!encApproveAmount?.handles[0])
-      //   throw new Error("Failed to create encrypted amount");
-      // const approveHash = await writeContractAsync({
-      //   ...Contracts.eWETH,
-      //   args: [
-      //     Contracts.koraExecutor.address,
-      //     toHex(encApproveAmount.handles[0]),
-      //     toHex(encApproveAmount?.inputProof),
-      //   ],
-      //   functionName: "approve",
-      // });
-      // await waitForTransactionReceipt(approveHash);
+      const toApprove = 2n ** 64n - 1n;
+      const encApproveAmount = await createEncryptedUint64(
+        toApprove,
+        Contracts.eWETH.address,
+      );
+      if (!encApproveAmount?.handles[0])
+        throw new Error("Failed to create encrypted amount");
+      const approveHash = await writeContractAsync({
+        ...Contracts.eWETH,
+        args: [
+          Contracts.koraExecutor.address,
+          toHex(encApproveAmount.handles[0]),
+          toHex(encApproveAmount?.inputProof),
+        ],
+        functionName: "approve",
+      });
+      await waitForTransactionReceipt(approveHash);
       const encAmount = await createEncryptedUint64(
         parseUnits(values.maxPurchaseAmount.toString(), 6),
         Contracts.koraExecutor.address,
