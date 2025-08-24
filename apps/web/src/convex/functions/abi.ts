@@ -16,6 +16,11 @@ export const koraExecutorAbi = [
         name: "_router",
         type: "address",
       },
+      {
+        internalType: "address",
+        name: "initialOwner",
+        type: "address",
+      },
     ],
     stateMutability: "nonpayable",
     type: "constructor",
@@ -23,6 +28,16 @@ export const koraExecutorAbi = [
   {
     inputs: [],
     name: "BatchAlreadyCompleted",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "BatchSizeExceedsMaximum",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ContractPaused",
     type: "error",
   },
   {
@@ -51,13 +66,50 @@ export const koraExecutorAbi = [
     type: "error",
   },
   {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+    ],
+    name: "OwnableInvalidOwner",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
+    name: "OwnableUnauthorizedAccount",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "SwapDeadlineExpired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TooManyHooks",
+    type: "error",
+  },
+  {
     inputs: [],
     name: "UnsupportedHandleType",
     type: "error",
   },
   {
     inputs: [],
-    name: "ZeroAddressHook",
+    name: "ZeroAddress",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ZeroSwapAmount",
     type: "error",
   },
   {
@@ -67,6 +119,12 @@ export const koraExecutorAbi = [
         indexed: true,
         internalType: "uint256",
         name: "requestId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "totalProcessed",
         type: "uint256",
       },
     ],
@@ -80,6 +138,12 @@ export const koraExecutorAbi = [
         indexed: true,
         internalType: "uint256",
         name: "requestId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "batchSize",
         type: "uint256",
       },
     ],
@@ -103,38 +167,7 @@ export const koraExecutorAbi = [
     anonymous: false,
     inputs: [
       {
-        indexed: false,
-        internalType: "bytes32",
-        name: "intentId",
-        type: "bytes32",
-      },
-      {
         indexed: true,
-        internalType: "bytes32",
-        name: "strategyId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "hook",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "bytes",
-        name: "revertData",
-        type: "bytes",
-      },
-    ],
-    name: "HookFailed",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
         internalType: "bytes32",
         name: "intentId",
         type: "bytes32",
@@ -159,7 +192,7 @@ export const koraExecutorAbi = [
     anonymous: false,
     inputs: [
       {
-        indexed: false,
+        indexed: true,
         internalType: "bytes32",
         name: "intentId",
         type: "bytes32",
@@ -184,6 +217,106 @@ export const koraExecutorAbi = [
       },
     ],
     name: "IntentRejected",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "OwnershipTransferred",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bool",
+        name: "paused",
+        type: "bool",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "caller",
+        type: "address",
+      },
+    ],
+    name: "PauseStateChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "intentId",
+        type: "bytes32",
+      },
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "strategyId",
+        type: "bytes32",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "hook",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "bytes",
+        name: "revertData",
+        type: "bytes",
+      },
+    ],
+    name: "PostHookFailed",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "intentId",
+        type: "bytes32",
+      },
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "strategyId",
+        type: "bytes32",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "hook",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "bytes",
+        name: "revertData",
+        type: "bytes",
+      },
+    ],
+    name: "PreHookFailed",
     type: "event",
   },
   {
@@ -223,6 +356,49 @@ export const koraExecutorAbi = [
     type: "event",
   },
   {
+    stateMutability: "payable",
+    type: "fallback",
+  },
+  {
+    inputs: [],
+    name: "MAX_BATCH_SIZE",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "MAX_HOOKS_PER_STRATEGY",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "MIN_SWAP_DEADLINE_BUFFER",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "uint256",
@@ -230,7 +406,7 @@ export const koraExecutorAbi = [
         type: "uint256",
       },
     ],
-    name: "_batches",
+    name: "batches",
     outputs: [
       {
         internalType: "uint256",
@@ -246,30 +422,6 @@ export const koraExecutorAbi = [
         internalType: "bool",
         name: "isPending",
         type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    name: "_strategies",
-    outputs: [
-      {
-        internalType: "address",
-        name: "user",
-        type: "address",
-      },
-      {
-        internalType: "uint64",
-        name: "timestamp",
-        type: "uint64",
       },
     ],
     stateMutability: "view",
@@ -347,232 +499,17 @@ export const koraExecutorAbi = [
         type: "uint64",
       },
       {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bytes[]",
-        name: "signatures",
-        type: "bytes[]",
-      },
-    ],
-    name: "decryptionCallback1",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "requestId",
-        type: "uint256",
-      },
-      {
         internalType: "uint64",
-        name: "totalIn",
+        name: "packedChecks",
         type: "uint64",
       },
       {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck2",
-        type: "bool",
-      },
-      {
         internalType: "bytes[]",
         name: "signatures",
         type: "bytes[]",
       },
     ],
-    name: "decryptionCallback2",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "requestId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint64",
-        name: "totalIn",
-        type: "uint64",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck2",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck3",
-        type: "bool",
-      },
-      {
-        internalType: "bytes[]",
-        name: "signatures",
-        type: "bytes[]",
-      },
-    ],
-    name: "decryptionCallback3",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "requestId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint64",
-        name: "totalIn",
-        type: "uint64",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck2",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck3",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck4",
-        type: "bool",
-      },
-      {
-        internalType: "bytes[]",
-        name: "signatures",
-        type: "bytes[]",
-      },
-    ],
-    name: "decryptionCallback4",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "requestId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint64",
-        name: "totalIn",
-        type: "uint64",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck2",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck3",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck4",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck5",
-        type: "bool",
-      },
-      {
-        internalType: "bytes[]",
-        name: "signatures",
-        type: "bytes[]",
-      },
-    ],
-    name: "decryptionCallback5",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "requestId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint64",
-        name: "totalIn",
-        type: "uint64",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck1",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck2",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck3",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck4",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck5",
-        type: "bool",
-      },
-      {
-        internalType: "bool",
-        name: "preHookCheck6",
-        type: "bool",
-      },
-      {
-        internalType: "bytes[]",
-        name: "signatures",
-        type: "bytes[]",
-      },
-    ],
-    name: "decryptionCallback6",
+    name: "decryptionCallback",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -614,12 +551,76 @@ export const koraExecutorAbi = [
   },
   {
     inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "pause",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "paused",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "router",
     outputs: [
       {
         internalType: "contract IUniswapV2Router02",
         name: "",
         type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    name: "strategies",
+    outputs: [
+      {
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+      {
+        internalType: "uint64",
+        name: "timestamp",
+        type: "uint64",
       },
     ],
     stateMutability: "view",
@@ -650,5 +651,55 @@ export const koraExecutorAbi = [
     ],
     stateMutability: "view",
     type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalBatches",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalStrategies",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "unpause",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    stateMutability: "payable",
+    type: "receive",
   },
 ] as const;
