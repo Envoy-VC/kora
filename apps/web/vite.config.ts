@@ -14,7 +14,6 @@ export default defineConfig(async ({ mode }) => {
   const { env } = await import("./src/env");
   return {
     envPrefix: ["VITE_"],
-
     plugins: [
       nodePolyfills(),
       tanstackRouter({
@@ -39,6 +38,9 @@ export default defineConfig(async ({ mode }) => {
         "Cross-Origin-Opener-Policy": "same-origin",
       },
       port: env.PORT,
+    },
+    ssr: {
+      noExternal: ["lucide-react"],
     },
   } satisfies UserConfig;
 });
