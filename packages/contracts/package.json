@@ -13,11 +13,12 @@
     "@zama-fhe/relayer-sdk": "^0.1.2",
     "chai": "^5.3.1",
     "dotenv": "^17.2.1",
-    "hardhat": "^2.26.3"
+    "hardhat": "^2.26.3",
+    "hardhat-deploy": "^1.0.4"
   },
   "name": "hardhat-project",
   "scripts": {
-    "clean": "rm -rf  ./fhevmTemp ./artifacts ./cache ./coverage ./types ./coverage.json ./dist && npm run typechain",
+    "clean": "rm -rf  ./fhevmTemp ./artifacts ./cache ./coverage ./types ./coverage.json ./dist",
     "compile": "TS_NODE_TRANSPILE_ONLY=true hardhat compile",
     "format": "forge fmt ./src",
     "test": "hardhat test",

@@ -1,11 +1,11 @@
-import * as dotenv from "dotenv";
-
-dotenv.config();
-
 import "@fhevm/hardhat-plugin";
 
+import * as dotenv from "dotenv";
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-deploy";
+
+dotenv.config();
 
 const MNEMONIC: string =
   process.env.MNEMONIC ??
@@ -23,7 +23,6 @@ const config: HardhatUserConfig = {
     enabled: process.env.REPORT_GAS === "true",
     excludeContracts: [],
   },
-
   networks: {
     anvil: {
       accounts: {
@@ -38,7 +37,7 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: MNEMONIC,
       },
-      allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
       chainId: 31337,
     },
     sepolia: {
@@ -56,25 +55,30 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.24", // your contracts
+        settings: {
+          evmVersion: "cancun",
+          metadata: {
+            bytecodeHash: "none",
+          },
+          optimizer: { enabled: true, runs: 200 },
+        },
+        version: "0.8.24", // Kora Contract
       },
       {
+        settings: {
+          evmVersion: "istanbul",
+          optimizer: { enabled: true, runs: 999999 },
+        },
         version: "0.6.6", // uniswap v2 periphery
       },
       {
-        version: "0.5.16", // uniswap v2 core
+        settings: {
+          evmVersion: "istanbul",
+          optimizer: { enabled: true, runs: 999999 },
+        },
+        version: "0.5.16", // uniswap core
       },
     ],
-    settings: {
-      evmVersion: "cancun",
-      metadata: {
-        bytecodeHash: "none",
-      },
-      optimizer: {
-        enabled: true,
-        runs: 800,
-      },
-    },
   },
   typechain: {
     outDir: "types",

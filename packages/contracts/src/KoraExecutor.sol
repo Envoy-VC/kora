@@ -463,8 +463,9 @@ contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
 
             // Calculate Ratio of Intent Amount to Total Token Input
             euint64 encAmountOut = FHE.asEuint64(uint64(amountOut));
-            euint64 ratio = FHE.div(intentAmountIn, totalIn);
-            euint64 intentAmountOut = FHE.mul(ratio, encAmountOut);
+            euint64 scaledIn = FHE.mul(intentAmountIn, FHE.asEuint64(1e6));
+            euint64 ratio = FHE.div(scaledIn, totalIn); // Scaled to 10^6
+            euint64 intentAmountOut = FHE.div(FHE.mul(ratio, encAmountOut), 1e6);
 
             // Transfer Encrypted Tokens to User
             address user = strategies[batch.results[i].strategyId].user;

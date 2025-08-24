@@ -211,29 +211,17 @@ interface ISwapHook {
 
 Kora has been deployed on Ethereum Sepolia Testnet.
 
-  <!-- const usdcAddress = "0x2d83Fff32862A6FBB7518DBfEa113979B8631797";
-  const wethAddress = "0x0C013Aa8CfE54Af1D892759fBc35F8835Ad163F7";
-  const eUSDCAddress = "0xCe4Fd687fa2EFE9a04d8745753C9E364DF91De1E";
-  const eWETHAddress = "0xE6184Bb67cd3B797C7e36DC460c83a7A5AB87063";
-  const budgetHookAddress = "0x1A34059f5015362fBa4255B9ef30e884a7B142E4";
-  const purchaseAmountHookAddress =
-    "0xC92e075c52F2Fe38d6389aC2b39bEE5788C341c2";
-  const timeframeHookAddress = "0x9dc301778C7EE60E30C7F8F89814bC5b7b3c4F41";
-  const frequencyHookAddress = "0xD7e7a322EaADA366C718e487FD3f2255a95C092f";
-  const koraExecutorAddress = "0xc82Fa85409D50De86396dCb57C08506522C33991";
-  const deployerAddress = "0x9A36a8EDAF9605F7D4dDC72F4D81463fb6f841d8"; -->
-
 | Contract | Address |
 | --- | --- |
-| KoraExecutor | [0xc82Fa85409D50De86396dCb57C08506522C33991](https://sepolia.etherscan.io/address/0xc82Fa85409D50De86396dCb57C08506522C33991) |
-| USDC |[0x2d83Fff32862A6FBB7518DBfEa113979B8631797](https://sepolia.etherscan.io/address/0x2d83Fff32862A6FBB7518DBfEa113979B8631797)  |
-| WETH | [0x0C013Aa8CfE54Af1D892759fBc35F8835Ad163F7](https://sepolia.etherscan.io/address/0x0C013Aa8CfE54Af1D892759fBc35F8835Ad163F7) |
-| eUSDC | [0xCe4Fd687fa2EFE9a04d8745753C9E364DF91De1E](https://sepolia.etherscan.io/address/0xCe4Fd687fa2EFE9a04d8745753C9E364DF91De1E) |
-| eWETH | [0xE6184Bb67cd3B797C7e36DC460c83a7A5AB87063](https://sepolia.etherscan.io/address/0xE6184Bb67cd3B797C7e36DC460c83a7A5AB87063) |
-| BudgetHook | [0x1A34059f5015362fBa4255B9ef30e884a7B142E4](https://sepolia.etherscan.io/address/0x1A34059f5015362fBa4255B9ef30e884a7B142E4) |
-| PurchaseAmountHook | [0xC92e075c52F2Fe38d6389aC2b39bEE5788C341c2](https://sepolia.etherscan.io/address/0xC92e075c52F2Fe38d6389aC2b39bEE5788C341c2) |
-| TimeframeHook | [0x9dc301778C7EE60E30C7F8F89814bC5b7b3c4F41](https://sepolia.etherscan.io/address/0x9dc301778C7EE60E30C7F8F89814bC5b7b3c4F41) |
-| FrequencyHook | [0xD7e7a322EaADA366C718e487FD3f2255a95C092f](https://sepolia.etherscan.io/address/0xD7e7a322EaADA366C718e487FD3f2255a95C092f) |
+| KoraExecutor | [0xa7fEA89845f65608eb02Ee768949Ac7C32ae83b3](https://sepolia.etherscan.io/address/0xa7fEA89845f65608eb02Ee768949Ac7C32ae83b3) |
+| USDC |[0x55922139468662dBB05fde86cce4f08d08Db33F3](https://sepolia.etherscan.io/address/0x55922139468662dBB05fde86cce4f08d08Db33F3)  |
+| WETH | [0xFDEC6aD96E24316d9C305db3E29e977aE6b629B5](https://sepolia.etherscan.io/address/0xFDEC6aD96E24316d9C305db3E29e977aE6b629B5) |
+| eUSDC | [0xCEd8Cc99597E9F5A59Ab4B24253bB7F2ADcdF1A7](https://sepolia.etherscan.io/address/0xCEd8Cc99597E9F5A59Ab4B24253bB7F2ADcdF1A7) |
+| eWETH | [0xd5a63Af1FCA951793519D572F485125CcDb92b3d](https://sepolia.etherscan.io/address/0xd5a63Af1FCA951793519D572F485125CcDb92b3d) |
+| BudgetHook | [0x1525a6706836c0352056bEb6B23be9C3b45F0FCD](https://sepolia.etherscan.io/address/0x1525a6706836c0352056bEb6B23be9C3b45F0FCD) |
+| PurchaseAmountHook | [0x83723D8bb09Ca8E05Ce4B659c99a1D44737EafA2](https://sepolia.etherscan.io/address/0x83723D8bb09Ca8E05Ce4B659c99a1D44737EafA2) |
+| TimeframeHook | [0x2C2a201Ac482343393CE8d000139BE83846dffDF](https://sepolia.etherscan.io/address/0x2C2a201Ac482343393CE8d000139BE83846dffDF) |
+| FrequencyHook | [0x31a4a185045b515bfa87a58eefD6cf12521e36eb](https://sepolia.etherscan.io/address/0x31a4a185045b515bfa87a58eefD6cf12521e36eb) |
 
 ## Testing
 
