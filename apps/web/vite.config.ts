@@ -39,8 +39,5 @@ export default defineConfig(async ({ mode }) => {
       },
       port: env.PORT,
     },
-    ssr: {
-      noExternal: ["lucide-react"],
-    },
   } satisfies UserConfig;
 });

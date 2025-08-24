@@ -12,7 +12,7 @@
     "@zama-fhe/relayer-sdk": "^0.1.2",
     "convex": "^1.26.1",
     "date-fns": "^4.1.0",
-    "lucide-react": "^0.540.0",
+    "lucide-react": "0.422.0",
     "motion": "^12.23.12",
     "nstr": "^0.1.2",
     "react": "^19.1.1",
