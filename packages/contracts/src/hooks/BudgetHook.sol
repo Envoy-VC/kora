@@ -10,51 +10,101 @@ import {IntentResult} from "../interfaces/IKoraExecutor.sol";
 
 import {IntentLib} from "../libraries/IntentLib.sol";
 
-import {KoraExecutor} from "../KoraExecutor.sol";
-
 contract BudgetHook is ISwapHook, SepoliaConfig {
     using IntentLib for IntentLib.Intent;
 
-    mapping(bytes32 => euint64) public _maxBudget;
-    mapping(bytes32 => euint64) public _spent;
+    // =============================================================
+    //                           CONSTANTS
+    // =============================================================
+    address public immutable executor;
 
-    KoraExecutor public immutable executor;
+    // =============================================================
+    //                        STATE VARIABLES
+    // =============================================================
+
+    mapping(bytes32 => euint64) public maxBudget;
+    mapping(bytes32 => euint64) public spent;
+
+    // =============================================================
+    //                            ERRORS
+    // =============================================================
+
+    /// @notice Thrown when the caller is not the executor
+    error NotExecutor(address sender);
+
+    // =============================================================
+    //                            EVENTS
+    // =============================================================
+
+    /**
+     * @notice Emitted when the hook is initialized
+     * @param strategyId The unique identifier of the strategy being initialized
+     * @dev This event is emitted when the hook is initialized and can be used
+     */
+    event HookInitialized(bytes32 indexed strategyId);
+
+    // =============================================================
+    //                         CONSTRUCTOR
+    // =============================================================
 
     constructor(address _executor) {
-        executor = KoraExecutor(payable(_executor));
+        executor = payable(_executor);
     }
 
-    function initialize(bytes32 strategyId, bytes memory data) external {
+    function initialize(bytes32 strategyId, bytes memory data) external onlyExecutor {
         euint64 zero = FHE.asEuint64(0);
 
         (address user, externalEuint64 externalMaxBudget, bytes memory proof) =
             abi.decode(data, (address, externalEuint64, bytes));
 
-        euint64 maxBudget = FHE.fromExternal(externalMaxBudget, proof);
-        FHE.isSenderAllowed(maxBudget);
+        euint64 _maxBudget = FHE.fromExternal(externalMaxBudget, proof);
+        FHE.isSenderAllowed(_maxBudget);
 
-        _maxBudget[strategyId] = maxBudget;
-        FHE.allowThis(_maxBudget[strategyId]);
-        FHE.allow(_maxBudget[strategyId], user);
+        maxBudget[strategyId] = _maxBudget;
+        FHE.allowThis(maxBudget[strategyId]);
+        FHE.allow(maxBudget[strategyId], user);
 
-        _spent[strategyId] = zero;
-        FHE.allowThis(_spent[strategyId]);
-        FHE.allow(_spent[strategyId], user);
+        spent[strategyId] = zero;
+        FHE.allowThis(spent[strategyId]);
+        FHE.allow(spent[strategyId], user);
+
+        emit HookInitialized(strategyId);
     }
 
-    function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external returns (ebool) {
-        euint64 currentSpent = _spent[strategyId];
+    function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external onlyExecutor returns (ebool) {
+        euint64 currentSpent = spent[strategyId];
 
         euint64 spentAfterSwap = FHE.add(currentSpent, intent.amount0);
-        ebool isAllowed = FHE.le(spentAfterSwap, _maxBudget[strategyId]);
+        ebool isAllowed = FHE.le(spentAfterSwap, maxBudget[strategyId]);
         FHE.allow(isAllowed, address(executor));
         return isAllowed;
     }
 
-    function postSwap(bytes32 strategyId, IntentResult memory result) external {
-        euint64 spentAfterSwap = FHE.add(_spent[strategyId], result.amount0);
-        _spent[strategyId] = spentAfterSwap;
-        FHE.allowThis(_spent[strategyId]);
-        FHE.allow(_spent[strategyId], result.user);
+    function postSwap(bytes32 strategyId, IntentResult memory result) external onlyExecutor {
+        euint64 spentAfterSwap = FHE.add(spent[strategyId], result.amount0);
+        spent[strategyId] = spentAfterSwap;
+        FHE.allowThis(spent[strategyId]);
+        FHE.allow(spent[strategyId], result.user);
+    }
+
+    function updateMaxBudget(bytes32 strategyId, euint64 newMaxBudget) external {
+        FHE.isSenderAllowed(maxBudget[strategyId]);
+
+        maxBudget[strategyId] = newMaxBudget;
+        FHE.allowThis(maxBudget[strategyId]);
+        FHE.allow(maxBudget[strategyId], msg.sender);
+    }
+
+    // =============================================================
+    //                           MODIFIERS
+    // =============================================================
+
+    /**
+     * @notice Modifier to check if caller is executor
+     * @dev Reverts if caller is not executor
+     */
+    modifier onlyExecutor() {
+        if (msg.sender != executor) revert NotExecutor(msg.sender);
+        _;
     }
 }
