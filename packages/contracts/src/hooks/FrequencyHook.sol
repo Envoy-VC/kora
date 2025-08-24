@@ -71,7 +71,7 @@ contract FrequencyHook is ISwapHook, SepoliaConfig {
         emit HookInitialized(strategyId);
     }
 
-    function preSwap(bytes32 strategyId, IntentLib.Intent calldata intent) external onlyExecutor returns (ebool) {
+    function preSwap(bytes32 strategyId, IntentLib.Intent calldata) external onlyExecutor returns (ebool) {
         euint64 minNextExecute = FHE.add(_lastExecutedAt[strategyId], _frequency[strategyId]);
 
         ebool isAllowed = FHE.ge(FHE.asEuint64(uint64(block.timestamp)), minNextExecute);

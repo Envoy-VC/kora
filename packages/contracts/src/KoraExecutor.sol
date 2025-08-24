@@ -20,7 +20,7 @@ import "./interfaces/ISwapHook.sol";
 import "./libraries/IntentLib.sol";
 import "./libraries/PackedBool.sol";
 
-contract KoraExecutor is IKoraExecutor, SepoliaConfig, Ownable {
+contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
     using IntentLib for IntentLib.Intent;
 
     // =============================================================
@@ -174,7 +174,10 @@ contract KoraExecutor is IKoraExecutor, SepoliaConfig, Ownable {
      * @param _router Address of the Uniswap V2 router
      * @dev All parameters must be non-zero addresses and valid contracts
      */
-    constructor(address _token0, address _token1, address _router, address initialOwner) Ownable(initialOwner) {
+    constructor(address _token0, address _token1, address _router, address initialOwner)
+        Ownable(initialOwner)
+        SepoliaConfig()
+    {
         if (_token0 == address(0)) revert ZeroAddress();
         if (_token1 == address(0)) revert ZeroAddress();
         if (_router == address(0)) revert ZeroAddress();

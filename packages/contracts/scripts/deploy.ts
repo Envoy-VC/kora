@@ -7,14 +7,18 @@ const deploy = async () => {
   console.log("\n=================== Accounts ===================\n");
   console.log("Deployer:", deployer.address);
 
+  console.log("\n============== Deployed Contracts ==============\n");
+
   const mockTokenFactory = await ethers.getContractFactory("MockERC20");
   const encryptedTokenFactory =
     await ethers.getContractFactory("EncryptedERC20");
 
   const usdc = await mockTokenFactory.deploy(deployerAddress, "USDC", "USDC");
   await usdc.waitForDeployment();
+  console.log("USDC:", usdc.target);
   const weth = await mockTokenFactory.deploy(deployerAddress, "WETH", "WETH");
   await weth.waitForDeployment();
+  console.log("WETH:", weth.target);
 
   const eUSDC = await encryptedTokenFactory.deploy(
     "Encrypted USDC",
@@ -22,6 +26,8 @@ const deploy = async () => {
     deployerAddress,
     await usdc.getAddress(),
   );
+  await eUSDC.waitForDeployment();
+  console.log("eUSDC:", eUSDC.target);
   const eWETH = await encryptedTokenFactory.deploy(
     "Encrypted WETH",
     "eWETH",
@@ -29,6 +35,7 @@ const deploy = async () => {
     await weth.getAddress(),
   );
   await eUSDC.waitForDeployment();
+  console.log("eWETH:", eWETH.target);
 
   const sepoliaUniswapV2RouterAddress =
     "0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3";
@@ -47,13 +54,16 @@ const deploy = async () => {
     await eWETH.getAddress(),
     await eUSDC.getAddress(),
     sepoliaUniswapV2RouterAddress,
+    deployerAddress,
   );
   await koraExecutor.waitForDeployment();
+  console.log("KoraExecutor:", koraExecutor.target);
 
   // Deploy Hooks
   const BudgetHook = await ethers.getContractFactory("BudgetHook");
   const budgetHook = await BudgetHook.deploy(koraExecutor.target);
   await budgetHook.waitForDeployment();
+  console.log("BudgetHook:", budgetHook.target);
 
   const PurchaseAmountHook =
     await ethers.getContractFactory("PurchaseAmountHook");
@@ -61,14 +71,17 @@ const deploy = async () => {
     koraExecutor.target,
   );
   await purchaseAmountHook.waitForDeployment();
+  console.log("PurchaseAmountHook:", purchaseAmountHook.target);
 
   const TimeframeHook = await ethers.getContractFactory("TimeframeHook");
   const timeframeHook = await TimeframeHook.deploy(koraExecutor.target);
   await timeframeHook.waitForDeployment();
+  console.log("TimeframeHook:", timeframeHook.target);
 
   const FrequencyHook = await ethers.getContractFactory("FrequencyHook");
   const frequencyHook = await FrequencyHook.deploy(koraExecutor.target);
   await frequencyHook.waitForDeployment();
+  console.log("FrequencyHook:", frequencyHook.target);
 
   const amount0 = ethers.parseUnits((1_000_000).toString(), 6);
   const amount1 = ethers.parseUnits((1_000_000 * 4000).toString(), 6);
@@ -111,17 +124,25 @@ const deploy = async () => {
 
   await tx.wait();
 
-  console.log("\n============== Deployed Contracts ==============\n");
-  console.log("KoraExecutor:", koraExecutor.target);
-  console.log("USDC:", usdc.target);
-  console.log("WETH:", weth.target);
-  console.log("eUSDC:", eUSDC.target);
-  console.log("eWETH:", eWETH.target);
-  console.log("Pair Address:", pairAddress);
-  console.log("BudgetHook:", budgetHook.target);
-  console.log("PurchaseAmountHook:", purchaseAmountHook.target);
-  console.log("TimeframeHook:", timeframeHook.target);
-  console.log("FrequencyHook:", frequencyHook.target);
+  console.log("\n================================================\n\n");
+
+  console.log(`const usdcAddress = "${usdc.target}";`);
+  console.log(`const wethAddress = "${weth.target}";`);
+  console.log(`const eUSDCAddress = "${eUSDC.target}";`);
+  console.log(`const eWETHAddress = "${eWETH.target}";`);
+  console.log(`const pairAddress = "${pairAddress}";`);
+  console.log(`const budgetHookAddress = "${budgetHook.target}";`);
+  console.log(
+    `const purchaseAmountHookAddress = "${purchaseAmountHook.target}";`,
+  );
+  console.log(`const timeframeHookAddress = "${timeframeHook.target}";`);
+  console.log(`const frequencyHookAddress = "${frequencyHook.target}";`);
+  console.log(`const koraExecutorAddress = "${koraExecutor.target}";`);
+  console.log(`const deployerAddress = "${deployer.address}";`);
+  console.log(
+    `const sepoliaUniswapV2RouterAddress = "${sepoliaUniswapV2RouterAddress}";`,
+  );
+
   console.log("\n================================================\n\n");
 
   console.log("Verifying Contracts...");
@@ -157,6 +178,7 @@ const deploy = async () => {
       eWETH.target,
       eUSDC.target,
       "0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3",
+      deployerAddress,
     ],
   });
 
