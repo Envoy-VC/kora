@@ -16,10 +16,7 @@ export default defineConfig(async ({ mode }) => {
     envPrefix: ["VITE_"],
     plugins: [
       nodePolyfills(),
-      tanstackRouter({
-        autoCodeSplitting: true,
-        target: "react",
-      }),
+      tanstackRouter(),
       react(),
       wasm(),
       topLevelAwait(),
