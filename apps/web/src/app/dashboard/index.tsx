@@ -101,13 +101,11 @@ function DashboardPage() {
           <img alt="eWETH" className="size-10" src="/icons/eweth.svg" />
         </div>
       </div>
-      <div className="card-gradient mx-auto my-0 flex max-w-screen-xl flex-cpl flex-col gap-4 rounded-2xl border p-4">
+      <div className="card-gradient mx-auto my-0 flex max-w-screen-2xl flex-cpl flex-col gap-4 rounded-2xl border p-4">
         <div className="flex w-full flex-col rounded-xl border bg-[#101010] p-3">
           <div className="text-2xl">My Strategies</div>
         </div>
-        <div>
-          <StrategiesTable strategies={strategies ?? []} />
-        </div>
+        <StrategiesTable strategies={strategies ?? []} />
       </div>
     </div>
   );
