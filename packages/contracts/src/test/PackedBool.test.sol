@@ -16,12 +16,15 @@ contract PackedBoolTests is SepoliaConfig {
         bytes inputProof;
     }
 
-    function packEbools(EboolArray[] memory externalArray) public returns (euint64) {
+    function packEbools(externalEbool[] memory externalArray, bytes memory inputProof) public returns (euint64) {
         ebool[] memory arr = new ebool[](externalArray.length);
-
-        for (uint256 i = 0; i < externalArray.length; i++) {
-            arr[i] = FHE.fromExternal(externalArray[i].handle, externalArray[i].inputProof);
+        for (uint256 i; i < externalArray.length;) {
+            arr[i] = FHE.fromExternal(externalArray[i], inputProof);
+            unchecked {
+                ++i;
+            }
         }
+
         packed = PackedBool.packEboolArray(arr);
         FHE.allowThis(packed);
         FHE.allow(packed, msg.sender);

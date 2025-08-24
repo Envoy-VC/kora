@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { ethers, fhevm } from "hardhat";
 
 import { getSigners, type Signers } from "../helpers";
@@ -24,28 +25,57 @@ describe("Packed Bool Library Tests", () => {
 
     const array = [false, true, false, true, false, true, false, true, false];
 
-    const encArray = [];
+    const res = fhevm.createEncryptedInput(
+      library.target as string,
+      alice.address,
+    );
 
-    for await (const val of array) {
-      const res = await fhevm
-        .createEncryptedInput(library.target as string, alice.address)
-        .addBool(val)
-        .encrypt();
-      encArray.push({ handle: res.handles[0], inputProof: res.inputProof });
+    for (const val of array) {
+      res.addBool(val);
     }
 
-    await library.connect(alice).packEbools(encArray);
-    const packed = await library.packed();
+    const encryptedArray = await res.encrypt();
 
-    // console.log("Original:", array);
-    // console.log("Packed:", packed);
+    await library
+      .connect(alice)
+      .packEbools(encryptedArray.handles, encryptedArray.inputProof);
 
     await library.connect(alice).unpackEbools();
     await fhevm.awaitDecryptionOracle();
-    const unpackedBools = [];
-    for (let i = 0; i < array.length; i++) {
-      unpackedBools.push(await library.unpacked(i));
+    const unpackedBools = await Promise.all(
+      array.map((_, i) => library.unpacked(i)),
+    );
+
+    expect(unpackedBools).to.deep.eq(array);
+  });
+  it("should pack single ebool", async () => {
+    const { alice } = signers;
+    const lib = await ethers.getContractFactory("PackedBoolTests");
+    const library = await lib.deploy();
+
+    const array = [false];
+
+    const res = fhevm.createEncryptedInput(
+      library.target as string,
+      alice.address,
+    );
+
+    for (const val of array) {
+      res.addBool(val);
     }
-    // console.log("Unpacked:", unpackedBools);
+
+    const encryptedArray = await res.encrypt();
+
+    await library
+      .connect(alice)
+      .packEbools(encryptedArray.handles, encryptedArray.inputProof);
+
+    await library.connect(alice).unpackEbools();
+    await fhevm.awaitDecryptionOracle();
+    const unpackedBools = await Promise.all(
+      array.map((_, i) => library.unpacked(i)),
+    );
+
+    expect(unpackedBools).to.deep.eq(array);
   });
 });
