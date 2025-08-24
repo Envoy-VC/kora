@@ -5,23 +5,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kora/ui/components/sidebar";
-import { ActivityIcon, PlusIcon } from "@kora/ui/icons";
+import { GiftIcon, PlusIcon } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 
 const investmentsGroupItems = [
   {
-    href: "/dashboard/strategies",
-    icon: ActivityIcon,
-    id: "strategies",
-    title: "My Strategies",
-  },
-  {
     href: "/dashboard/create-strategy",
     icon: PlusIcon,
     id: "create-strategy",
     title: "Create Strategy",
+  },
+  {
+    href: "/dashboard/wrap",
+    icon: GiftIcon,
+    id: "wrap",
+    title: "Wrap Tokens",
   },
 ];
 

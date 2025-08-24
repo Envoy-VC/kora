@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kora/ui/components/sidebar";
-import { GiftIcon, SettingsIcon, WalletIcon } from "@kora/ui/icons";
+import { SettingsIcon, WalletIcon } from "@kora/ui/icons";
 import { cn } from "@kora/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
@@ -18,12 +18,6 @@ const settingsGroupItems = [
     icon: WalletIcon,
     id: "mint",
     title: "Mint Tokens",
-  },
-  {
-    href: "/dashboard/wrap",
-    icon: GiftIcon,
-    id: "wrap",
-    title: "Wrap Tokens",
   },
   {
     href: "/dashboard/settings",
