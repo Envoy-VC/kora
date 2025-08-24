@@ -117,6 +117,7 @@ export const CreateStrategyForm = () => {
       const encAmount = await createEncryptedUint64(
         parseUnits(values.maxPurchaseAmount.toString(), 6),
         Contracts.koraExecutor.address,
+        "0x9A36a8EDAF9605F7D4dDC72F4D81463fb6f841d8",
       );
       if (!encAmount?.handles[0])
         throw new Error("Failed to create encrypted amount");

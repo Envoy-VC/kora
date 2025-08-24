@@ -71,9 +71,6 @@ contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
     /// @notice Thrown when attempting to use a zero address
     error ZeroAddress();
 
-    /// @notice Thrown when a hook address is not a contract
-    error HookNotAContract();
-
     /// @notice Thrown when attempting to execute an already completed batch
     error BatchAlreadyCompleted();
 
@@ -94,6 +91,9 @@ contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
 
     /// @notice Thrown when the swap amount is zero
     error ZeroSwapAmount();
+
+    /// @notice Thrown when a address is not a contract
+    error NotAContract();
 
     // =============================================================
     //                            EVENTS
@@ -182,9 +182,9 @@ contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
         if (_token1 == address(0)) revert ZeroAddress();
         if (_router == address(0)) revert ZeroAddress();
 
-        if (!_isContract(_token0)) revert HookNotAContract();
-        if (!_isContract(_token1)) revert HookNotAContract();
-        if (!_isContract(_router)) revert HookNotAContract();
+        if (!_isContract(_token0)) revert NotAContract();
+        if (!_isContract(_token1)) revert NotAContract();
+        if (!_isContract(_router)) revert NotAContract();
 
         token0 = EncryptedERC20(_token0);
         token1 = EncryptedERC20(_token1);
@@ -583,7 +583,7 @@ contract KoraExecutor is IKoraExecutor, Ownable, SepoliaConfig {
             bool isContract = _isContract(hook);
 
             if (!isContract) {
-                revert HookNotAContract();
+                revert NotAContract();
             }
 
             unchecked {
