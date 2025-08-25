@@ -12,6 +12,8 @@ import "../libraries/IntentLib.sol";
 contract HookTests is SepoliaConfig {
     using IntentLib for IntentLib.Intent;
 
+    event PreSwapResult(ebool result);
+
     function initialize(bytes32 strategyId, bytes memory data, address hookAddress) external {
         ISwapHook hook = ISwapHook(hookAddress);
         hook.initialize(strategyId, data);
@@ -29,7 +31,10 @@ contract HookTests is SepoliaConfig {
             intentId: intentExternal.intentId,
             strategyId: intentExternal.strategyId
         });
-        return hook.preSwap(strategyId, intent);
+        ebool result = hook.preSwap(strategyId, intent);
+        FHE.allow(result, msg.sender);
+        emit PreSwapResult(result);
+        return result;
     }
 
     struct IntentResultExternal {
@@ -42,7 +47,9 @@ contract HookTests is SepoliaConfig {
         bytes revertData;
     }
 
-    function postSwap(bytes32 strategyId, IntentResultExternal memory intentResultExternal, address hookAddress) external {
+    function postSwap(bytes32 strategyId, IntentResultExternal memory intentResultExternal, address hookAddress)
+        external
+    {
         euint64 amount0 = FHE.fromExternal(intentResultExternal.handle, intentResultExternal.inputProof);
         FHE.allow(amount0, hookAddress);
         ebool check = FHE.fromExternal(intentResultExternal.externalCheck, intentResultExternal.inputProof);
