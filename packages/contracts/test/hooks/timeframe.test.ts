@@ -1,15 +1,15 @@
 import { expect } from "chai";
-import { ethers, fhevm } from "hardhat";
+import { ethers, fhevm, network } from "hardhat";
 
 const EventLog = ethers.EventLog;
 
-import type { HookTests, PurchaseAmountHook } from "../../types";
+import type { HookTests, TimeframeHook } from "../../types";
 import { decryptHandle, getSigners, type Signers } from "../helpers";
 
 type Env = {
   executorAddress: string;
   hookTest: HookTests;
-  hook: PurchaseAmountHook;
+  hook: TimeframeHook;
 };
 
 async function deployFixture(): Promise<Env> {
@@ -22,10 +22,8 @@ async function deployFixture(): Promise<Env> {
   // Random address for testing purposes
   const executorAddress = hookTest.target as string;
 
-  const PurchaseAmountHook =
-    await ethers.getContractFactory("PurchaseAmountHook");
-  const hook =
-    await PurchaseAmountHook.connect(deployer).deploy(executorAddress);
+  const TimeframeHook = await ethers.getContractFactory("TimeframeHook");
+  const hook = await TimeframeHook.connect(deployer).deploy(executorAddress);
   await hook.waitForDeployment();
 
   return {
@@ -35,7 +33,7 @@ async function deployFixture(): Promise<Env> {
   };
 }
 
-describe("PurchaseAmount Hook Tests", () => {
+describe("Timeframe Hook Tests", () => {
   let signers: Signers;
   let env: Env;
 
@@ -53,20 +51,22 @@ describe("PurchaseAmount Hook Tests", () => {
     env = await deployFixture();
   });
 
+  const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
+
   async function initialize() {
     const { alice } = signers;
     const { hook, hookTest, executorAddress } = env;
     const strategyId = ethers.hexlify(ethers.randomBytes(32));
 
-    const encMaxBudget = await fhevm
+    const vars = await fhevm
       .createEncryptedInput(hook.target as string, executorAddress)
-      .add64(ethers.parseUnits("0.1", 6))
+      .add64(Math.round(Date.now() / 1000) + ONE_DAY_IN_SECONDS)
       .encrypt();
 
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const initParams = abiCoder.encode(
       ["address", "bytes32", "bytes"],
-      [alice.address, encMaxBudget.handles[0], encMaxBudget.inputProof],
+      [alice.address, vars.handles[0], vars.inputProof],
     );
 
     await hookTest
@@ -75,7 +75,7 @@ describe("PurchaseAmount Hook Tests", () => {
     return strategyId;
   }
 
-  it("should deploy PurchaseAmountHook", () => {
+  it("should deploy TimeframeHook", () => {
     expect(env.hook.target).to.not.be.null;
   });
 
@@ -84,19 +84,15 @@ describe("PurchaseAmount Hook Tests", () => {
     const { hook } = env;
     const strategyId = ethers.hexlify(ethers.randomBytes(32));
 
-    const maxPurchaseAmountEnc = await fhevm
+    const vars = await fhevm
       .createEncryptedInput(hook.target as string, alice.address)
-      .add64(ethers.parseUnits("0.1", 6))
+      .add64(Math.round(Date.now() / 1000) + ONE_DAY_IN_SECONDS)
       .encrypt();
 
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const initParams = abiCoder.encode(
       ["address", "bytes32", "bytes"],
-      [
-        alice.address,
-        maxPurchaseAmountEnc.handles[0],
-        maxPurchaseAmountEnc.inputProof,
-      ],
+      [alice.address, vars.handles[0], vars.inputProof],
     );
 
     await expect(hook.connect(alice).initialize(strategyId, initParams))
@@ -109,57 +105,22 @@ describe("PurchaseAmount Hook Tests", () => {
     const { hook } = env;
     const strategyId = await initialize();
 
-    const maxPurchaseAmount = await decryptHandle({
+    const validUntil = await decryptHandle({
       contractAddress: hook.target as string,
-      handle: await hook.connect(alice)._maxPurchaseAmount(strategyId),
+      handle: await hook.connect(alice)._validUntil(strategyId),
       signer: alice,
     });
 
-    expect(maxPurchaseAmount).to.eq(ethers.parseUnits("0.1", 6));
-  });
-
-  it("should return false on greater amount than maxPurchaseAmount", async () => {
-    const { alice } = signers;
-    const { hook, hookTest } = env;
-    const strategyId = await initialize();
-
-    const variables = await fhevm
-      .createEncryptedInput(hookTest.target as string, alice.address)
-      .add64(ethers.parseUnits("0.5", 6))
-      .addBool(true)
-      .encrypt();
-
-    const tx = await hookTest.connect(alice).preSwap(
-      strategyId,
-      {
-        amount0: variables.handles[0],
-        inputProof: variables.inputProof,
-        intentId: ethers.randomBytes(32),
-        strategyId: strategyId,
-      },
-      hook.target as string,
+    expect(validUntil).to.eq(
+      Math.round(Date.now() / 1000) + ONE_DAY_IN_SECONDS,
     );
-    const receipt = await tx.wait();
-    const log = receipt?.logs.find((l) => {
-      if (l instanceof EventLog) {
-        return l.eventName === "PreSwapResult";
-      }
-      return false;
-    });
-    const handle = log instanceof EventLog ? log.args.result : null;
-
-    const isAllowed = await decryptHandle({
-      contractAddress: hookTest.target as string,
-      handle,
-      signer: alice,
-    });
-
-    expect(isAllowed).to.eq(false);
   });
-  it("should return true on less than or equal than maxPurchaseAmount", async () => {
+  it("should return true on valid period", async () => {
     const { alice } = signers;
     const { hook, hookTest } = env;
     const strategyId = await initialize();
+
+    await network.provider.send("evm_increaseTime", [100]);
 
     const variables = await fhevm
       .createEncryptedInput(hookTest.target as string, alice.address)
@@ -193,5 +154,45 @@ describe("PurchaseAmount Hook Tests", () => {
     });
 
     expect(isAllowed).to.eq(true);
+  });
+  it("should return false after valid period", async () => {
+    const { alice } = signers;
+    const { hook, hookTest } = env;
+    const strategyId = await initialize();
+
+    await network.provider.send("evm_increaseTime", [ONE_DAY_IN_SECONDS]);
+
+    const variables = await fhevm
+      .createEncryptedInput(hookTest.target as string, alice.address)
+      .add64(ethers.parseUnits("0.5", 6))
+      .addBool(true)
+      .encrypt();
+
+    const tx = await hookTest.connect(alice).preSwap(
+      strategyId,
+      {
+        amount0: variables.handles[0],
+        inputProof: variables.inputProof,
+        intentId: ethers.randomBytes(32),
+        strategyId: strategyId,
+      },
+      hook.target as string,
+    );
+    const receipt = await tx.wait();
+    const log = receipt?.logs.find((l) => {
+      if (l instanceof EventLog) {
+        return l.eventName === "PreSwapResult";
+      }
+      return false;
+    });
+    const handle = log instanceof EventLog ? log.args.result : null;
+
+    const isAllowed = await decryptHandle({
+      contractAddress: hookTest.target as string,
+      handle,
+      signer: alice,
+    });
+
+    expect(isAllowed).to.eq(false);
   });
 });
