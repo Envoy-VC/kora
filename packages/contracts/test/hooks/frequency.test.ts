@@ -124,7 +124,7 @@ describe("Frequency Hook Tests", () => {
       .addBool(true)
       .encrypt();
 
-    const tx = await hookTest.connect(alice).preSwap(
+    await hookTest.connect(alice).preSwap(
       strategyId,
       {
         amount0: variables.handles[0],
@@ -256,44 +256,4 @@ describe("Frequency Hook Tests", () => {
 
     expect(isAllowed).to.eq(true);
   });
-  // it("should return false after valid period", async () => {
-  //   const { alice } = signers;
-  //   const { hook, hookTest } = env;
-  //   const strategyId = await initialize();
-
-  //   await network.provider.send("evm_increaseTime", [ONE_DAY_IN_SECONDS]);
-
-  //   const variables = await fhevm
-  //     .createEncryptedInput(hookTest.target as string, alice.address)
-  //     .add64(ethers.parseUnits("0.5", 6))
-  //     .addBool(true)
-  //     .encrypt();
-
-  //   const tx = await hookTest.connect(alice).preSwap(
-  //     strategyId,
-  //     {
-  //       amount0: variables.handles[0],
-  //       inputProof: variables.inputProof,
-  //       intentId: ethers.randomBytes(32),
-  //       strategyId: strategyId,
-  //     },
-  //     hook.target as string,
-  //   );
-  //   const receipt = await tx.wait();
-  //   const log = receipt?.logs.find((l) => {
-  //     if (l instanceof EventLog) {
-  //       return l.eventName === "PreSwapResult";
-  //     }
-  //     return false;
-  //   });
-  //   const handle = log instanceof EventLog ? log.args.result : null;
-
-  //   const isAllowed = await decryptHandle({
-  //     contractAddress: hookTest.target as string,
-  //     handle,
-  //     signer: alice,
-  //   });
-
-  //   expect(isAllowed).to.eq(false);
-  // });
 });

@@ -230,15 +230,20 @@ Kora has been deployed on Ethereum Sepolia Testnet.
 The test suite is organized into logical modules located in `packages/contracts/test`:
 
 ```
-test/
-├── executor.test.ts          # Main contract integration tests
-├── helpers/
-│   ├── env.ts               # Test environment setup
-│   ├── index.ts             # Common test utilities
-│   └── uniswap.ts           # Uniswap integration tests
-├── libraries/
-│   └── packed-bool.test.ts  # Library unit tests
-└── wrapped-token.test.ts    # Token contract tests
+├── test
+│   ├── executor.test.ts
+│   ├── helpers
+│   │   ├── env.ts
+│   │   ├── index.ts
+│   │   └── uniswap.ts
+│   ├── hooks
+│   │   ├── budget.test.ts
+│   │   ├── frequency.test.ts
+│   │   ├── purchase-amount.test.ts
+│   │   └── timeframe.test.ts
+│   ├── libraries
+│   │   └── packed-bool.test.ts
+│   └── wrapped-token.test.ts
 ```
 
 ### 2. Test Coverage
@@ -249,6 +254,12 @@ test/
 - **Batch Execution**: Test batch formation and execution
 - **Hook Integration**: Test pre and post-swap hook execution
 - **Token Distribution**: Test proportional token distribution
+
+#### Hooks Tests (`test/hooks`)
+- **Budget Hook Tests**: Test Budget Hook functionality
+- **Frequency Hook Tests**: Test Frequency Hook functionality
+- **Purchase Amount Hook Tests**: Test Purchase Amount Hook functionality
+- **Timeframe Hook Tests**: Test Timeframe Hook functionality
 
 #### Unit Tests
 - **Library Tests**: Test utility libraries and helper functions
