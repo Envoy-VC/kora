@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@convex-dev/action-retrier": "^0.2.1",
     "@hookform/resolvers": "^5.2.1",
     "@kora/ui": "workspace:*",
     "@splinetool/react-spline": "^4.1.0",

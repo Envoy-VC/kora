@@ -77,13 +77,15 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
         euint64 spentAfterSwap = FHE.add(currentSpent, intent.amount0);
         ebool isAllowed = FHE.le(spentAfterSwap, maxBudget[strategyId]);
         FHE.allow(isAllowed, address(executor));
+
+        // Update spent amount
+        spent[strategyId] = spentAfterSwap;
+        FHE.allowThis(spent[strategyId]);
+
         return isAllowed;
     }
 
     function postSwap(bytes32 strategyId, IntentResult memory result) external onlyExecutor {
-        euint64 spentAfterSwap = FHE.add(spent[strategyId], result.amount0);
-        spent[strategyId] = spentAfterSwap;
-        FHE.allowThis(spent[strategyId]);
         FHE.allow(spent[strategyId], result.user);
     }
 

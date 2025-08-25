@@ -218,10 +218,10 @@ Kora has been deployed on Ethereum Sepolia Testnet.
 | WETH | [0xFDEC6aD96E24316d9C305db3E29e977aE6b629B5](https://sepolia.etherscan.io/address/0xFDEC6aD96E24316d9C305db3E29e977aE6b629B5) |
 | eUSDC | [0xCEd8Cc99597E9F5A59Ab4B24253bB7F2ADcdF1A7](https://sepolia.etherscan.io/address/0xCEd8Cc99597E9F5A59Ab4B24253bB7F2ADcdF1A7) |
 | eWETH | [0xd5a63Af1FCA951793519D572F485125CcDb92b3d](https://sepolia.etherscan.io/address/0xd5a63Af1FCA951793519D572F485125CcDb92b3d) |
-| BudgetHook | [0x1525a6706836c0352056bEb6B23be9C3b45F0FCD](https://sepolia.etherscan.io/address/0x1525a6706836c0352056bEb6B23be9C3b45F0FCD) |
+| BudgetHook | [0x9054Af6f1FAB2975f6d148B6ff21cae1D104830C](https://sepolia.etherscan.io/address/0x9054Af6f1FAB2975f6d148B6ff21cae1D104830C) |
 | PurchaseAmountHook | [0x83723D8bb09Ca8E05Ce4B659c99a1D44737EafA2](https://sepolia.etherscan.io/address/0x83723D8bb09Ca8E05Ce4B659c99a1D44737EafA2) |
 | TimeframeHook | [0x2C2a201Ac482343393CE8d000139BE83846dffDF](https://sepolia.etherscan.io/address/0x2C2a201Ac482343393CE8d000139BE83846dffDF) |
-| FrequencyHook | [0x31a4a185045b515bfa87a58eefD6cf12521e36eb](https://sepolia.etherscan.io/address/0x31a4a185045b515bfa87a58eefD6cf12521e36eb) |
+| FrequencyHook | [0x1C68D590D1CdB7ce071456D89529052Ce3B94C54](https://sepolia.etherscan.io/address/0x1C68D590D1CdB7ce071456D89529052Ce3B94C54) |
 
 ## Testing
 

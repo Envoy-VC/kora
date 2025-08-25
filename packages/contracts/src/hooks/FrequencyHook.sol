@@ -76,12 +76,14 @@ contract FrequencyHook is ISwapHook, SepoliaConfig {
 
         ebool isAllowed = FHE.ge(FHE.asEuint64(uint64(block.timestamp)), minNextExecute);
         FHE.allow(isAllowed, address(executor));
+
+        // Update last executed timestamp
+        _lastExecutedAt[strategyId] = FHE.asEuint64(uint64(block.timestamp));
+        FHE.allowThis(_lastExecutedAt[strategyId]);
         return isAllowed;
     }
 
     function postSwap(bytes32 strategyId, IntentResult memory result) external onlyExecutor {
-        _lastExecutedAt[strategyId] = FHE.asEuint64(uint64(block.timestamp));
-        FHE.allowThis(_lastExecutedAt[strategyId]);
         FHE.allow(_lastExecutedAt[strategyId], result.user);
     }
 

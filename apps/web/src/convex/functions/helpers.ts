@@ -26,7 +26,7 @@ export const executeStrategies = async (strategies: Strategy[]) => {
   const walletClient: WalletClient = createWalletClient({
     account,
     chain: sepolia,
-    transport: http(),
+    transport: http(process.env.SEPOLIA_RPC_URL as string),
   });
 
   const batch = strategies.map((strategy) => {
