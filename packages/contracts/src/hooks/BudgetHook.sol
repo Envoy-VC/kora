@@ -89,8 +89,9 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
         FHE.allow(spent[strategyId], result.user);
     }
 
-    function updateMaxBudget(bytes32 strategyId, euint64 newMaxBudget) external {
+    function updateMaxBudget(bytes32 strategyId, externalEuint64 externalMaxBudget, bytes memory proof) external {
         FHE.isSenderAllowed(maxBudget[strategyId]);
+        euint64 newMaxBudget = FHE.fromExternal(externalMaxBudget, proof);
 
         maxBudget[strategyId] = newMaxBudget;
         FHE.allowThis(maxBudget[strategyId]);

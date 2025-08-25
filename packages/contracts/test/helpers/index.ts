@@ -1,7 +1,7 @@
 import { FhevmType } from "@fhevm/hardhat-plugin";
 // biome-ignore lint/correctness/noUndeclaredDependencies: safe
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { ethers, fhevm } from "hardhat";
+import { ethers, fhevm, network } from "hardhat";
 
 import type { EncryptedERC20, MockERC20 } from "../../types";
 
@@ -93,4 +93,68 @@ export const approveEncryptedToken = async (
     .connect(signer)
     ["approve(address,bytes32,bytes)"](spender, enc.handles[0], enc.inputProof);
   await tx.wait();
+};
+
+export async function impersonate(
+  address: string,
+): Promise<HardhatEthersSigner> {
+  await network.provider.send("hardhat_impersonateAccount", [address]);
+  return await ethers.getSigner(address);
+}
+
+export async function stopImpersonate(address: string): Promise<void> {
+  await network.provider.send("hardhat_stopImpersonatingAccount", [address]);
+}
+
+interface DecryptHandleProps {
+  handle: string;
+  contractAddress: string;
+  signer: HardhatEthersSigner;
+}
+
+export const decryptHandle = async ({
+  handle,
+  contractAddress,
+  signer,
+}: DecryptHandleProps) => {
+  const keypair = await fhevm.generateKeypair();
+  const handleContractPairs = [
+    {
+      contractAddress: contractAddress,
+      handle: handle,
+    },
+  ];
+  const startTimeStamp = Math.floor(Date.now() / 1000).toString();
+  const durationDays = "10"; // String for consistency
+  const contractAddresses = [contractAddress];
+
+  const eip712 = fhevm.createEIP712(
+    keypair.publicKey,
+    contractAddresses,
+    startTimeStamp,
+    durationDays,
+  );
+
+  const signature = await signer.signTypedData(
+    eip712.domain,
+    {
+      // biome-ignore lint/style/useNamingConvention: safe
+      UserDecryptRequestVerification:
+        eip712.types.UserDecryptRequestVerification,
+    },
+    eip712.message,
+  );
+
+  const result = await fhevm.userDecrypt(
+    handleContractPairs,
+    keypair.privateKey,
+    keypair.publicKey,
+    signature.replace("0x", ""),
+    contractAddresses,
+    signer.address,
+    startTimeStamp,
+    durationDays,
+  );
+
+  return result[handle];
 };
