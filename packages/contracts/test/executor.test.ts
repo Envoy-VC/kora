@@ -1,3 +1,5 @@
+// biome-ignore lint/correctness/noUndeclaredDependencies: safe
+import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, fhevm } from "hardhat";
 
@@ -29,66 +31,86 @@ describe("Wrapped Encrypted Token Tests", () => {
     }
   });
 
-  it("full user flow", async () => {
-    const { alice } = signers;
-    const { weth, eWETH, koraExecutor, eUSDC, hooks } = env;
+  const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+  const ONE_HOUR_IN_SECONDS = 1 * 60 * 60;
+
+  async function getEncryptedBalances(signer: HardhatEthersSigner) {
+    const { eWETH, eUSDC } = env;
+    const { clearBalance: eWETHBalance } = await getEncryptedTokenBalance(
+      eWETH,
+      signer,
+    );
+    const { clearBalance: eUSDCBalance } = await getEncryptedTokenBalance(
+      eUSDC,
+      signer,
+    );
+
+    return { eUSDCBalance, eWETHBalance };
+  }
+
+  async function createStrategy(
+    signer: HardhatEthersSigner,
+    maxBudget: string,
+    maxPurchaseAmount: string,
+    validUntil: number,
+    frequency: number,
+  ) {
+    const { weth, eWETH, koraExecutor, hooks } = env;
 
     const koraExecutorAddress = await koraExecutor.getAddress();
 
-    const amount = ethers.parseUnits("1", 6);
+    const amount = ethers.parseUnits(maxBudget, 6);
 
-    // Step 1: Give Alice some weth, wrap them, approve to KoraExecutor
-    await mintMockTokens(weth, alice.address, amount);
-    await approveMockTokens(weth, alice, eWETH.target as string, amount);
-    await depositMockTokens(eWETH, alice, amount);
-    await approveEncryptedToken(eWETH, alice, koraExecutorAddress, amount);
+    // Step 1: Give User some weth, wrap them, approve to KoraExecutor
+    await mintMockTokens(weth, signer.address, amount);
+    await approveMockTokens(weth, signer, eWETH.target as string, amount);
+    await depositMockTokens(eWETH, signer, amount);
+    await approveEncryptedToken(eWETH, signer, koraExecutorAddress, amount);
 
     const salt = ethers.hexlify(ethers.randomBytes(32));
 
     const strategyId = await koraExecutor.computeStrategyId(
-      alice.address,
+      signer.address,
       salt,
     );
 
     // Build Hooks
 
     // 1. Budget Hook
-    const maxBudget = await fhevm
+    const maxBudgetEnc = await fhevm
       .createEncryptedInput(
         await hooks.budgetHook.getAddress(),
         koraExecutorAddress,
       )
-      .add64(ethers.parseUnits("1", 6))
+      .add64(ethers.parseUnits(maxBudget, 6))
       .encrypt();
 
     // 2. Purchase Amount Hook
     // Max Amount of tokens per transaction.
-    const maxPurchaseAmount = await fhevm
+    const maxPurchaseAmountEnc = await fhevm
       .createEncryptedInput(
         await hooks.purchaseAmountHook.getAddress(),
         koraExecutorAddress,
       )
-      .add64(ethers.parseUnits("0.5", 6))
+      .add64(ethers.parseUnits(maxPurchaseAmount, 6))
       .encrypt();
 
     // 3. Timeframe Hook
-    const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
-    const validUntil = await fhevm
+    const validUntilEnc = await fhevm
       .createEncryptedInput(
         await hooks.timeframeHook.getAddress(),
         koraExecutorAddress,
       )
-      .add64(Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS)
+      .add64(validUntil)
       .encrypt();
 
     // 4. Frequency Hook
-    const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
-    const frequency = await fhevm
+    const frequencyEnc = await fhevm
       .createEncryptedInput(
         await hooks.frequencyHook.getAddress(),
         koraExecutorAddress,
       )
-      .add64(ONE_DAY_IN_SECONDS)
+      .add64(frequency)
       .encrypt();
 
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
@@ -97,7 +119,7 @@ describe("Wrapped Encrypted Token Tests", () => {
       {
         data: abiCoder.encode(
           ["address", "bytes32", "bytes"],
-          [alice.address, maxBudget.handles[0], maxBudget.inputProof],
+          [signer.address, maxBudgetEnc.handles[0], maxBudgetEnc.inputProof],
         ),
         hook: hooks.budgetHook.target,
       },
@@ -105,9 +127,9 @@ describe("Wrapped Encrypted Token Tests", () => {
         data: abiCoder.encode(
           ["address", "bytes32", "bytes"],
           [
-            alice.address,
-            maxPurchaseAmount.handles[0],
-            maxPurchaseAmount.inputProof,
+            signer.address,
+            maxPurchaseAmountEnc.handles[0],
+            maxPurchaseAmountEnc.inputProof,
           ],
         ),
         hook: hooks.purchaseAmountHook.target,
@@ -115,14 +137,14 @@ describe("Wrapped Encrypted Token Tests", () => {
       {
         data: abiCoder.encode(
           ["address", "bytes32", "bytes"],
-          [alice.address, validUntil.handles[0], validUntil.inputProof],
+          [signer.address, validUntilEnc.handles[0], validUntilEnc.inputProof],
         ),
         hook: hooks.timeframeHook.target,
       },
       {
         data: abiCoder.encode(
           ["address", "bytes32", "bytes"],
-          [alice.address, frequency.handles[0], frequency.inputProof],
+          [signer.address, frequencyEnc.handles[0], frequencyEnc.inputProof],
         ),
         hook: hooks.frequencyHook.target,
       },
@@ -130,96 +152,149 @@ describe("Wrapped Encrypted Token Tests", () => {
 
     // Create A Strategy
     await koraExecutor
-      .connect(alice)
-      .createStrategy(alice.address, strategyHooks, salt);
+      .connect(signer)
+      .createStrategy(signer.address, strategyHooks, salt);
 
-    const encryptedAmount = await fhevm
+    return strategyId;
+  }
+
+  it("should execute batch intents", async () => {
+    const { alice, bob } = signers;
+    const { koraExecutor } = env;
+
+    const koraExecutorAddress = await koraExecutor.getAddress();
+
+    const strategyIdAlice = await createStrategy(
+      alice,
+      "1",
+      "0.5",
+      Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS,
+      ONE_HOUR_IN_SECONDS,
+    );
+    const strategyIdBob = await createStrategy(
+      bob,
+      "1",
+      "0.25",
+      Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS,
+      ONE_HOUR_IN_SECONDS,
+    );
+
+    const encryptedAmountAlice = await fhevm
       .createEncryptedInput(koraExecutorAddress, alice.address)
       .add64(ethers.parseUnits("0.5", 6))
       .encrypt();
+    const encryptedAmountBob = await fhevm
+      .createEncryptedInput(koraExecutorAddress, alice.address)
+      .add64(ethers.parseUnits("0.25", 6))
+      .encrypt();
 
-    const { clearBalance: eWETHBefore } = await getEncryptedTokenBalance(
-      eWETH,
-      alice,
-    );
-    const { clearBalance: eUSDCBefore } = await getEncryptedTokenBalance(
-      eUSDC,
-      alice,
-    );
+    const aliceBefore = await getEncryptedBalances(alice);
+    const bobBefore = await getEncryptedBalances(bob);
+
+    // Before Alice and Bob execute, they should have 1 eWETH and 1 eWETH
+    expect(aliceBefore.eWETHBalance).to.be.eq(ethers.parseUnits("1", 6));
+    expect(bobBefore.eWETHBalance).to.be.eq(ethers.parseUnits("1", 6));
 
     const executeTx = await koraExecutor.connect(alice).executeBatch([
       {
-        amount0: encryptedAmount.handles[0],
-        inputProof: encryptedAmount.inputProof,
+        amount0: encryptedAmountAlice.handles[0],
+        inputProof: encryptedAmountAlice.inputProof,
         intentId: ethers.randomBytes(32),
-        strategyId: strategyId,
+        strategyId: strategyIdAlice,
+      },
+      {
+        amount0: encryptedAmountBob.handles[0],
+        inputProof: encryptedAmountBob.inputProof,
+        intentId: ethers.randomBytes(32),
+        strategyId: strategyIdBob,
       },
     ]);
 
     await executeTx.wait();
     await fhevm.awaitDecryptionOracle();
 
-    const { clearBalance: eWETHAfter } = await getEncryptedTokenBalance(
-      eWETH,
+    const aliceAfter = await getEncryptedBalances(alice);
+    const bobAfter = await getEncryptedBalances(bob);
+
+    // Alice should have 0.5 eWETH, Bob should have 0.75 eWETH
+    expect(aliceAfter.eWETHBalance).to.be.eq(ethers.parseUnits("0.5", 6));
+    expect(bobAfter.eWETHBalance).to.be.eq(ethers.parseUnits("0.75", 6));
+
+    // Alice should have double of bob's eUSDC balance
+    expect(aliceAfter.eUSDCBalance).to.be.eq(bobAfter.eUSDCBalance * 2n);
+    expect(aliceAfter.eUSDCBalance).to.be.gt(0n);
+  });
+
+  it("should not execute one bad intent in batch", async () => {
+    const { alice, bob } = signers;
+    const { koraExecutor } = env;
+
+    const koraExecutorAddress = await koraExecutor.getAddress();
+
+    const strategyIdAlice = await createStrategy(
       alice,
+      "1",
+      "0.5",
+      Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS,
+      ONE_HOUR_IN_SECONDS,
+    );
+    const strategyIdBob = await createStrategy(
+      bob,
+      "1",
+      "0.25",
+      Math.round(Date.now() / 1000) + ONE_YEAR_IN_SECONDS,
+      ONE_HOUR_IN_SECONDS,
     );
 
-    const { clearBalance: eUSDCAfter } = await getEncryptedTokenBalance(
-      eUSDC,
-      alice,
-    );
-
-    expect(eWETHAfter).to.be.eq(ethers.parseUnits("0.5", 6));
-    expect(eUSDCAfter).to.be.gt(eUSDCBefore);
-    expect(eWETHBefore).to.be.gt(eWETHAfter);
-
-    console.log("\n================= First Execute =================");
-    console.log("eWETHBefore", ethers.formatUnits(eWETHBefore, 6));
-    console.log("eUSDCBefore", ethers.formatUnits(eUSDCBefore, 6));
-    console.log("eWETHAfter", ethers.formatUnits(eWETHAfter, 6));
-    console.log("eUSDCAfter", ethers.formatUnits(eUSDCAfter, 6));
-    console.log("=================================================\n");
-
-    const { clearBalance: eWETHBefore1 } = await getEncryptedTokenBalance(
-      eWETH,
-      alice,
-    );
-    const { clearBalance: eUSDCBefore1 } = await getEncryptedTokenBalance(
-      eUSDC,
-      alice,
-    );
-
-    const encryptedAmount2 = await fhevm
+    const encryptedAmountAlice = await fhevm
       .createEncryptedInput(koraExecutorAddress, alice.address)
       .add64(ethers.parseUnits("0.5", 6))
       .encrypt();
 
-    const a = await koraExecutor.connect(alice).executeBatch([
+    // Bob has a bad intent, where he swaps more eWETH than maxPurchaseAmount
+    const encryptedAmountBob = await fhevm
+      .createEncryptedInput(koraExecutorAddress, alice.address)
+      .add64(ethers.parseUnits("0.5", 6))
+      .encrypt();
+
+    const aliceBefore = await getEncryptedBalances(alice);
+    const bobBefore = await getEncryptedBalances(bob);
+
+    // Before Alice should have 1.5 eWETH: 0.5 from previous swap + 1 from new Mint
+    // Before Bob should have 1.75 eWETH: 0.75 from previous swap + 1 from new Mint
+    expect(aliceBefore.eWETHBalance).to.be.eq(ethers.parseUnits("1.5", 6));
+    expect(bobBefore.eWETHBalance).to.be.eq(ethers.parseUnits("1.75", 6));
+
+    const executeTx = await koraExecutor.connect(alice).executeBatch([
       {
-        amount0: encryptedAmount2.handles[0],
-        inputProof: encryptedAmount2.inputProof,
+        amount0: encryptedAmountAlice.handles[0],
+        inputProof: encryptedAmountAlice.inputProof,
         intentId: ethers.randomBytes(32),
-        strategyId: strategyId,
+        strategyId: strategyIdAlice,
+      },
+      {
+        amount0: encryptedAmountBob.handles[0],
+        inputProof: encryptedAmountBob.inputProof,
+        intentId: ethers.randomBytes(32),
+        strategyId: strategyIdBob,
       },
     ]);
 
-    await a.wait();
+    await executeTx.wait();
     await fhevm.awaitDecryptionOracle();
 
-    const { clearBalance: eWETHAfter1 } = await getEncryptedTokenBalance(
-      eWETH,
-      alice,
-    );
-    const { clearBalance: eUSDCAfter1 } = await getEncryptedTokenBalance(
-      eUSDC,
-      alice,
-    );
+    const aliceAfter = await getEncryptedBalances(alice);
+    const bobAfter = await getEncryptedBalances(bob);
 
-    console.log("\n================= Second Execute =================");
-    console.log("eWETHBefore", ethers.formatUnits(eWETHBefore1, 6));
-    console.log("eUSDCBefore", ethers.formatUnits(eUSDCBefore1, 6));
-    console.log("eWETHAfter", ethers.formatUnits(eWETHAfter1, 6));
-    console.log("eUSDCAfter", ethers.formatUnits(eUSDCAfter1, 6));
-    console.log("=================================================\n");
+    // Alice should have 1 eWETH, 1.5 - 0.5 = 1
+    // Bob should have 1.75 eWETH, 1.75 - 0  as swap should fail
+    expect(aliceAfter.eWETHBalance).to.be.eq(ethers.parseUnits("1", 6));
+    expect(bobAfter.eWETHBalance).to.be.eq(ethers.parseUnits("1.75", 6));
+
+    // Alice should have 4 times more eUSDC than bob, because she has swapped total 1 eWETH
+    // Bob has swapped in total 0.25 eWETH
+    // this is not exact due to uniswap fees logic.
+    const diff = bobAfter.eUSDCBalance * 4n - aliceAfter.eUSDCBalance;
+    expect(diff).to.be.gt(0n).and.lt(1000n);
   });
 });

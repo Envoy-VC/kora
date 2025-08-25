@@ -6,13 +6,8 @@ import { deployMockUniswapV2 } from "./uniswap";
 export type Environment = Awaited<ReturnType<typeof createEnvironment>>;
 
 export const createEnvironment = async () => {
-  const { deployer, alice, bob } = await getSigners();
+  const { deployer } = await getSigners();
   const deployerAddress = deployer.address;
-
-  console.log("\n=================== Accounts ===================\n");
-  console.log("Deployer:", deployer.address);
-  console.log("Alice:", alice.address);
-  console.log("Bob:", bob.address);
 
   const mockTokenFactory = await ethers.getContractFactory("MockERC20");
   const encryptedTokenFactory =
@@ -74,14 +69,6 @@ export const createEnvironment = async () => {
     purchaseAmountHook,
     timeframeHook,
   };
-
-  console.log("\n============== Deployed Contracts ==============\n");
-  console.log("KoraExecutor:", koraExecutor.target);
-  console.log("USDC:", usdc.target);
-  console.log("WETH:", weth.target);
-  console.log("eUSDC:", eUSDC.target);
-  console.log("eWETH:", eWETH.target);
-  console.log("\n================================================\n\n");
 
   return {
     eUSDC,
