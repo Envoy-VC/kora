@@ -77,8 +77,11 @@ contract FrequencyHook is ISwapHook, SepoliaConfig {
         ebool isAllowed = FHE.ge(FHE.asEuint64(uint64(block.timestamp)), minNextExecute);
         FHE.allow(isAllowed, address(executor));
 
-        // Update last executed timestamp
-        _lastExecutedAt[strategyId] = FHE.asEuint64(uint64(block.timestamp));
+        // Only Update last executed timestamp if the swap is allowed
+        // Because the swap is not allowed, the swap would not be executed in the batch.
+        euint64 updatedTimestamp =
+            FHE.select(isAllowed, FHE.asEuint64(uint64(block.timestamp)), _lastExecutedAt[strategyId]);
+        _lastExecutedAt[strategyId] = updatedTimestamp;
         FHE.allowThis(_lastExecutedAt[strategyId]);
         return isAllowed;
     }

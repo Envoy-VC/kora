@@ -78,8 +78,10 @@ contract BudgetHook is ISwapHook, SepoliaConfig {
         ebool isAllowed = FHE.le(spentAfterSwap, maxBudget[strategyId]);
         FHE.allow(isAllowed, address(executor));
 
-        // Update spent amount
-        spent[strategyId] = spentAfterSwap;
+        // Only Update the spent amount if the swap is allowed
+        // Because the swap is not allowed, the swap would not be executed in the batch.
+        euint64 updatedAmount = FHE.select(isAllowed, spentAfterSwap, currentSpent);
+        spent[strategyId] = updatedAmount;
         FHE.allowThis(spent[strategyId]);
 
         return isAllowed;
